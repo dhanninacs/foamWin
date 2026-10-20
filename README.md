@@ -1,59 +1,126 @@
-# OpenFOAM 14 for native Windows
+# OpenFOAM 14 for Windows
 
-This repository ports Foundation OpenFOAM 14 to 64-bit Windows using MinGW-w64
-and the blueCFD-derived Windows OS layer. Windows execution uses the native
-PowerShell launcher; MSYS2 and WSL are not required at runtime.
+**openfoam14-windows** is a community Windows port of Foundation OpenFOAM 14,
+using MinGW-w64 and the blueCFD-derived Windows OS layer. It includes a native
+PowerShell launcher, a Windows installer, and validated cavity examples.
 
-## Run a Windows distribution
+This is an independent community port, not an official OpenFOAM distribution.
+The Windows binaries run without MSYS2 or WSL. Building from source requires Linux.
 
-Extract OF14-win.zip or install OF14-win-setup.exe, then open of14-shell.bat or
-the OpenFOAM 14 shortcut. The shell starts in the OpenFOAM run directory.
-The launcher supports installation paths with spaces through junction aliases.
+## Download and install
+
+The initial release is **v14.0.0-win.1 — OpenFOAM 14 for Windows — Initial Release**.
+Its distribution files are:
+
+| File | Purpose |
+|---|---|
+| `OF14-win-setup.exe` | Guided installer, Desktop/Start Menu shortcuts, and uninstaller |
+| `OF14-win.zip` | Portable distribution with a PowerShell installation option |
+
+Download these assets from the repository's GitHub Releases page once published.
+The source archive alone does not contain the compiled Windows binaries.
+
+For the installer, run `OF14-win-setup.exe` and approve the Windows administrator
+prompt. For the portable package, extract the ZIP into a folder of your choice.
+Open the **OpenFOAM 14** shortcut or double-click `of14-shell.bat`.
+
+The shell configures the binaries and DLLs and opens your OpenFOAM run directory.
+Installation paths containing spaces are supported through junction aliases.
+MSYS2 is optional and is not required by the native launcher.
+
+## Run the cavity example
+
+In the OpenFOAM shell:
 
 ```powershell
 blockMesh -help
-& ./of14-smoke-test.ps1
 ```
 
-The shell prints the full path to the smoke-test script. If your current folder
-is the run directory, use that printed path. The test copies the included legacy
-cavity case, runs blockMesh, checkMesh, and icoFoam, and verifies the final field
-at time 0.5. See [Windows usage](packaging/WINDOWS-README.md).
+Then run the complete smoke-test command printed by the launcher. It points to
+`of14-smoke-test.ps1` in the installation directory. The script:
 
-## Build and package
+1. Copies the included legacy icoFoam cavity tutorial into a new run folder.
+2. Runs `blockMesh`, `checkMesh`, and `icoFoam`.
+3. Checks for `Mesh OK` and the final velocity field at time **0.5 s**.
+4. Retains the logs and creates `cavity.foam` for post-processing.
 
-Use a case-sensitive Linux filesystem for the source checkout. OpenFOAM has
-source files and directories whose names differ only by capitalization.
-Build tools: MinGW-w64 GCC, make, flex; packaging: Python 3, NSIS, zip.
-The original full build driver still requires its external regex/zlib dependencies
-and has not been validated by a complete rebuild during this runtime repair.
+If you are already in the extracted distribution directory, you can run it directly:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./of14-smoke-test.ps1
+```
+
+Install ParaView separately and open `cavity.foam` to inspect the result.
+See [Windows usage](packaging/WINDOWS-README.md) for installation and path details.
+
+## Validation
+
+Native Windows testing covered:
+
+- Startup checks for **all 85 packaged executables**.
+- The legacy cavity example: mesh generation, `Mesh OK`, and icoFoam through 0.5 s.
+- The modern incompressibleFluid cavity with `foamRun` through time 10.
+- Actual installation, installed-package execution, and the Desktop shortcut.
+- Installation/case paths with spaces, runtime DLL imports, and ZIP integrity.
+
+These are execution and smoke tests, not exhaustive physical-model benchmarks.
+
+## Limitations
+
+- **Serial execution only**; the package uses dummy MPI.
+- **64-bit Windows**, double precision, 32-bit labels.
+- ParaView is not bundled.
+- Runtime code compilation needs additional compiler configuration.
+- A full clean rebuild of every source component was not performed during the
+  runtime repair; the build driver still needs its external regex/zlib dependencies.
+
+## Source and packaging
+
+Use a **case-sensitive Linux filesystem** for the source checkout. OpenFOAM has
+files and directories whose names differ only by capitalization; a normal Windows
+checkout can merge or overwrite them.
+
+Build tools include MinGW-w64 GCC, make, and flex. Packaging requires Python 3,
+NSIS, and zip. With the cross-build prerequisites available:
 
 ```bash
 bash OpenFOAM-14/build-all.sh
 bash scripts/make-installer.sh
 ```
 
-For an existing completed build, set OF14_SOURCE to its OpenFOAM directory.
-Packaging resolves matching compiler DLLs with CXX -print-file-name, bundles the
-stack-trace helper, checks all package imports, and creates a fresh ZIP and EXE.
-WIN_RUNTIME_DIR and OF14_EXT_LIBBIN override the runtime and helper locations.
+For a completed build outside this repository, set `OF14_SOURCE` to its OpenFOAM
+directory. `OF14_OUTPUT` selects the output folder. `WIN_RUNTIME_DIR` and
+`OF14_EXT_LIBBIN` select compiler runtimes and the stack-trace helper when needed.
+Packaging validates imports and produces fresh EXE/ZIP distributions.
+
+| Path | Contents |
+|---|---|
+| `OpenFOAM-14/` | Patched OpenFOAM sources and Windows build rules |
+| `third-party/stack_trace/` | Windows stack-trace helper source |
+| `installer/` | Native launcher, smoke test, and installer definitions |
+| `scripts/` | Build/packaging helpers and validation checks |
+| `packaging/` | Windows usage, packaging, and repair documentation |
+
+See [porting notes](PORTING-NOTES.md), [repair details](packaging/WINDOWS-REPAIR.md),
+and [packaging instructions](packaging/README.md).
+
+## Privacy and publishing
+
+Before publishing source changes:
 
 ```bash
 python3 scripts/check-private-data.py --history
 ```
 
-The privacy check reports filenames and categories, never matched credentials.
-Local credentials and validation output are ignored. Git identities use a generic
-contributor identity; upstream copyright and license attribution is preserved.
+This pattern-based check reports file paths and finding categories without printing
+matched secrets. Credentials, compiled artifacts, and local validation output are
+excluded by `.gitignore`. Keep private backups outside the repository. Attach the
+EXE and ZIP to GitHub Releases rather than committing them to the source tree.
+See [repository settings](REPOSITORY.md) and [release notes](CHANGELOG.md).
 
-## Validation and limits
+## License and credits
 
-85 executable help checks, legacy cavity, modern foamRun incompressibleFluid
-cavity, installed-package execution, and the actual desktop shortcut were tested
-on Windows. Serial execution only; ParaView is installed separately. Runtime code
-compilation needs additional compiler setup. This is smoke testing, not exhaustive
-validation of all physical models.
-
-See [repair details](packaging/WINDOWS-REPAIR.md), [porting notes](PORTING-NOTES.md),
-and [packaging](packaging/README.md). OpenFOAM and its derived Windows patches are
-GPLv3; retain upstream copyright and third-party runtime licenses.
+OpenFOAM and the derived Windows patches are distributed under **GPLv3**; see
+[LICENSE](LICENSE) and [OpenFOAM COPYING](OpenFOAM-14/COPYING). Preserve the OpenFOAM
+Foundation and blueCFD/blueCAPE upstream copyright and attribution. Third-party
+runtime DLLs retain their own licenses and notices, included with the distributions.
