@@ -1,8 +1,8 @@
-# FoamHarbor changelog
+# FoamWin changelog
 
 ## v14.0.0-win.1 — 2026-10-20
 
-**FoamHarbor 14 for Windows — Initial Release**
+**FoamWin 14 for Windows — Initial Release**
 
 Native 64-bit Windows serial build of Foundation OpenFOAM 14 using MinGW-w64 and
 the blueCFD-derived Windows compatibility layer.

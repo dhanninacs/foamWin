@@ -1,8 +1,8 @@
-# FoamHarbor
+# FoamWin
 
-### OpenFOAM, at home on Windows.
+### OpenFOAM 14 for Windows.
 
-**FoamHarbor** (`foamharbor`) is a community Windows port of Foundation OpenFOAM 14,
+**FoamWin** (`foamwin`) is a community Windows port of Foundation OpenFOAM 14,
 using MinGW-w64 and the blueCFD-derived Windows OS layer. It includes a native
 PowerShell launcher, a Windows installer, and validated cavity examples.
 
@@ -11,7 +11,7 @@ The Windows binaries run without MSYS2 or WSL. Building from source requires Lin
 
 ## Download and install
 
-The initial release is **v14.0.0-win.1 — FoamHarbor 14 for Windows — Initial Release**.
+The initial release is **v14.0.0-win.1 — FoamWin 14 for Windows — Initial Release**.
 Its distribution files retain the tested OpenFOAM package names:
 
 | File | Purpose |

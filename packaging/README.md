@@ -1,4 +1,4 @@
-# FoamHarbor Windows packaging
+# FoamWin Windows packaging
 
 Run `bash scripts/make-installer.sh` from a completed Linux cross-build. It creates
 OF14-win-setup.exe and OF14-win.zip from the same staging tree. Set OF14_SOURCE
