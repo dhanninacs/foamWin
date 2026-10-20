@@ -1,0 +1,13 @@
+-include $(GENERAL_RULES)/mplibDummy
+
+EXE_INC  = $(PFLAGS) $(PINC)
+
+ifneq (,$(filter $(GFLAGS),-DWIN32 -DWIN64))
+
+LIB_LIBS = $(PLIBS) -l$(WM_PROJECT)
+
+else
+
+LIB_LIBS = $(PLIBS)
+
+endif

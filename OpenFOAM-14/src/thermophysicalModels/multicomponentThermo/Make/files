@@ -1,0 +1,16 @@
+multicomponentThermo/multicomponentThermo.C
+
+fluidMulticomponentThermo/fluidMulticomponentThermo.C
+
+psiMulticomponentThermo/psiMulticomponentThermo.C
+psiMulticomponentThermo/psiMulticomponentThermos.C
+
+rhoFluidMulticomponentThermo/rhoFluidMulticomponentThermo.C
+rhoFluidMulticomponentThermo/rhoFluidMulticomponentThermosCoeffGases.C
+rhoFluidMulticomponentThermo/rhoFluidMulticomponentThermosGasesLiquids.C
+rhoFluidMulticomponentThermo/rhoFluidMulticomponentThermosLiquidsTabulated.C
+
+functionObjects/moleFractions/moleFractions.C
+functionObjects/massFractions/massFractions.C
+
+LIB = $(FOAM_LIBBIN)/libmulticomponentThermophysicalModels

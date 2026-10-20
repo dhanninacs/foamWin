@@ -1,0 +1,116 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# 2014-02-21 blueCAPE Lda: Modifications for blueCFD-Core 2.3-1
+# 2016-03-15 blueCAPE Lda: Modifications for blueCFD-Core 2.3-2 and 2016-1
+# 2016-07-xx blueCAPE Lda: More modifications for blueCFD-Core 2016-1
+# 2016-10-16/23 blueCAPE Lda: More modifications for blueCFD-Core 2016-2
+# 2016-12-07 blueCAPE Lda: More modifications for blueCFD-Core 2016-2
+# 2016-202X FS Dynamics Portugal: Subsequent changes are tracked at:
+#       https://github.com/blueCFD/OpenFOAM-dev
+#------------------------------------------------------------------------------
+# License
+#     This file is a derivative work of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Modifications
+#     This file has been created by blueCAPE's unofficial mingw patches for
+#     OpenFOAM.
+#     For more information about these patches, visit:
+#         http://bluecfd.com/Core
+#
+#     Modifications made:
+#        - Originally derived from the patches for blueCFD 2.1 and 2.2, which
+#          were applied to the file makeDerivedFiles.
+#        - This script makeVersionResourceFile was later created for
+#          blueCFD-Core 2.3-2 and 2016-1, based on the original modifications.
+#        - This script has the ability to build the resource files for
+#          embedding them in binaries, therefore allowing us to add version
+#          information to the binaries for Windows to see.
+#        - Cleaned up the code a bit and made the script able to update the dep
+#          file and only update the sourcesFile.
+#        - Split this script into three:
+#          - makeVersionResourceFile
+#          - makeVersionResourceDepFile
+#          - makeVersionResourceSListFile
+#
+# Script
+#     makeVersionResourceFile
+#
+# Description
+#     Constructs the version resource file.
+#
+#------------------------------------------------------------------------------
+
+# Provided by makefiles/files
+OBJECTS_DIR=$1
+VERSIONFILE=$2
+MF_FILES=$3
+
+# Change to the $OBJECTS_DIR directory
+if [ ! -d "$OBJECTS_DIR" ]
+then
+    echo "Could not use the directory '$OBJECTS_DIR'" 1>&2
+    exit 1
+fi
+
+# Special preparations for MinGW builds
+if [ -e "$FOAM_SRC/OSspecific/$WM_OSTYPE/res/OFversion_template.rc" ]
+then
+    cp "$FOAM_SRC/OSspecific/$WM_OSTYPE/res/OFversion_template.rc" tmpver.rc
+
+    # Extract the binary name
+    MGW_EXENAME=$(grep -e "^EXE =" $MF_FILES)
+    MGW_LIBNAME=$(grep -e "^LIB =" $MF_FILES)
+    MGW_FINALNAME="NONAME"
+
+    if [ -n "$MGW_EXENAME" ]
+    then
+        MGW_FINALNAME=$(echo $MGW_EXENAME | sed -e 's=.*/==').exe
+    fi
+
+    if [ -n "$MGW_LIBNAME" ]
+    then
+        MGW_FINALNAME=$(echo $MGW_LIBNAME | sed -e 's=.*/==').dll
+    fi
+
+    # Get current OpenFOAM version
+    MGW_OFversion=$(wmakePrintBuild -short)
+
+    LIBRARIES_TO_LOAD=""
+    # Replace the library loading string
+    if grep -q -e "LIBS_TO_LOAD" "${MF_FILES}"
+    then
+        LIBRARIES_TO_LOAD=$(
+            grep -e "LIBS_TO_LOAD" "${MF_FILES}" | \
+            sed -e 's/.*LIBS_TO_LOAD="\\"\(.*\)\\""/\1/'
+            )
+    fi
+
+    # Apply values to template
+    sed -e 's=2\.0\.\0\.0='$MGW_OFversion'=g' \
+        -e 's=tmpintname='$MGW_FINALNAME'=' \
+        -e 's=tmporigname='$MGW_FINALNAME'=' \
+        -e 's=LIBRARY_LIST_THEM_HERE='${LIBRARIES_TO_LOAD}'=' \
+        tmpver.rc > "${VERSIONFILE}"
+
+    # Clean up
+    unset MGW_OFversion MGW_EXENAME MGW_LIBNAME MGW_FINALNAME
+    rm tmpver.rc
+
+else
+    exit 1
+fi
+
+#------------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+EXE_INC = \
+    -I$(WM_THIRD_PARTY_DIR)/stack_trace/lnInclude
+
+LIB_LIBS = \
+    -lregex \
+    -lstack_trace

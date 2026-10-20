@@ -1,0 +1,25 @@
+# Build artifacts
+*.o
+*.dep
+*.so
+*.dll
+*.exe
+*.a
+lnInclude/
+platforms/
+Make/linux*/
+Make/*Opt/
+Make/*Debug/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+*~
+*.swp
+
+# Packaging output
+OF14-win-setup.exe
+OF14-win.zip
+*.deb

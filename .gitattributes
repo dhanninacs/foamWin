@@ -1,0 +1,6 @@
+*.bat text eol=crlf
+*.sh text eol=lf
+*.nsi text
+*.ps1 text eol=crlf
+*.C text
+*.H text

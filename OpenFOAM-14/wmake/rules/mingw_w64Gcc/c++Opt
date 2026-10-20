@@ -1,0 +1,7 @@
+c++DBUG     = 
+c++OPT      = -O2 -DNDEBUG -gdwarf -fno-tree-vectorize
+
+# This had to be removed, because using it will disable proper stack tracing:
+# -Wl,--strip-all
+
+ROUNDING_MATH = -frounding-math

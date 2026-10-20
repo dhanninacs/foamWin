@@ -1,0 +1,23 @@
+OpenFOAM 14 for Windows (MinGW-w64 native build)
+================================================
+
+OpenFOAM is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OpenFOAM is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OpenFOAM (see OpenFOAM-14/COPYING). If not, see
+https://www.gnu.org/licenses/.
+
+OpenFOAM is a registered trade mark of OpenCFD Ltd,producer of the
+ESI-OpenCFD product line. This build is derived from the OpenFOAM
+Foundation code base (https://openfoam.org), distributed under GPLv3.
+
+MSYS2 components are distributed under their own licenses (BSD/MIT
+family); see https://www.msys2.org for details.

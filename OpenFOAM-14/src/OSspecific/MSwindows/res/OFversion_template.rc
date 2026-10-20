@@ -1,0 +1,31 @@
+#include "OSResourceIDs.H"
+
+IDR_VERSION1 VERSIONINFO
+FILEVERSION 12,0,2024,0
+PRODUCTVERSION 12,0,2024,0
+FILEOS 0x00000000
+FILETYPE 0x00000000
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "FFFF0000"
+    BEGIN
+      VALUE "FileVersion", "2.0.0.0\0" //do not change this
+      VALUE "ProductVersion", "2.0.0.0\0" //do not change this
+      VALUE "FileDescription", "tmpintname - Built for blueCFD(R)-Core, by FS Dynamics Portugal.\0"
+      VALUE "LegalCopyright", "OpenFOAM is Copyright (C) 2011-24 OpenFOAM Foundation. Is also open source software, under the license GNU GPLv3: http://www.gnu.org/licenses/\0"
+      VALUE "LegalTrademarks", "OpenFOAM is a trade mark of OpenCFD (ESI Group). blueCFD is a trade mark of FS Dynamics Portugal.\0"
+      VALUE "ProductName", "Unofficial port of OpenFOAM. Port website: http://bluecfd.github.io/Core/\0"
+      VALUE "InternalName", "tmpintname\0"
+      VALUE "OriginalFilename", "tmporigname\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0xFFFF, 0x0000
+  END
+END
+STRINGTABLE
+{
+    LIBRARY_DEPENDENCIES "LIBRARY_LIST_THEM_HERE"
+}

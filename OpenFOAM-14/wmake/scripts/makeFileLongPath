@@ -1,0 +1,126 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# 2016-07-18/19 blueCAPE Lda: Modifications for blueCFD-Core 2016-1
+# 2016-202X FS Dynamics Portugal: Subsequent changes are tracked at:
+#       https://github.com/blueCFD/OpenFOAM-dev
+#------------------------------------------------------------------------------
+# License
+#     This file is a derivative work of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Modifications
+#     This file has been modified by blueCAPE's unofficial mingw patches for
+#     OpenFOAM.
+#     For more information about these patches, visit:
+#         http://bluecfd.com/Core
+#
+#     Modifications made:
+#        - This script will reinterpret the paths for a single object file
+#          from the MSys2 path to Windows long paths
+#
+# Script
+#     makeFileLongPath
+#
+# Description
+#     Translates the file/folder path, but meant to be used only on Windows.
+#
+#------------------------------------------------------------------------------
+
+Script=${0##*/}
+
+usage() {
+    cat<<USAGE
+
+Usage: $Script [OPTION] [file]
+
+options:
+  -fit      | -f    fit the address within 259 characters... using short path names
+  -shorten  | -s    force using short path names either way
+  -folder   | -o    it's not a file, it's a folder
+  -help     | -h    Print the usage
+
+
+This script will reinterpret the paths for a single object file from the MSys2
+path to Windows long paths
+
+USAGE
+}
+
+CYGPATH_EXTRA=
+MUST_FIT=
+SHORTEN=
+IS_A_FOLDER=
+
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+        # Print help
+        -h | -help)
+            usage && exit 0
+            ;;
+        -f | -fit)
+            MUST_FIT=yes
+            ;;
+        -o | -folder)
+            IS_A_FOLDER=yes
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+
+if onWin
+then
+
+    if [ -n "${MUST_FIT}" ]
+    then
+        FULL_PATH=$(cygpath -a -w -m "${1}" | sed -e 's=^//?/=\\\\?\\=')
+        CHAR_COUNT=$(echo "${FULL_PATH}" | wc -m)
+
+        if [ "${FULL_PATH/ /}" != "${FULL_PATH}" ]
+        then
+            SHORTEN=yes
+        fi
+
+        if [ -n "${IS_A_FOLDER}" ]
+        then
+            CHAR_COUNT=$(expr $CHAR_COUNT + 15)
+        fi
+
+        if [ -n "${SHORTEN}" -o $CHAR_COUNT -gt 259 ]
+        then
+            CYGPATH_EXTRA="-s"
+
+            if [ -z "${IS_A_FOLDER}" ]
+            then
+                touch "${FULL_PATH/^\\\\\?\\/}"
+            else
+                mkdir -p "${FULL_PATH/^\\\\\?\\/}"
+            fi
+        fi
+    fi
+
+    cygpath -a $CYGPATH_EXTRA -w -m "${1}" | sed 's=\\=\\\\=g'
+
+else
+
+    echo $1
+
+fi
+
+#------------------------------------------------------------------------------

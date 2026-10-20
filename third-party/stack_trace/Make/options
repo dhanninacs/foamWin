@@ -1,0 +1,5 @@
+EXE_INC = -I$(WM_PROJECT_DIR)/src/OSspecific/MSwindows/lnInclude
+
+LIB_LIBS = \
+    -limagehlp \
+    -ldbghelp

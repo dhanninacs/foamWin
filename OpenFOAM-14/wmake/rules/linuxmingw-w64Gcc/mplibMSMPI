@@ -1,0 +1,3 @@
+PFLAGS     = -DMSMPI_NO_DEPRECATE_2012
+PINC       = 
+PLIBS      = -lmsmpi

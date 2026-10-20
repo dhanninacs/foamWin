@@ -1,0 +1,24 @@
+EXE_INC = \
+    -I$(OBJECTS_DIR)
+
+ifneq (,$(filter $(GFLAGS),-DWIN32 -DWIN64))
+
+# neutralize unwanted lib includes...
+PROJECT_LIBS =
+
+# whole-archive is needed to ensure the static library is embedded
+LIB_LIBS = \
+    -Wl,-whole-archive -lOSspecific -Wl,-no-whole-archive \
+    -L$(FOAM_LIBBIN)/dummy -lPstream \
+    -L$(FOAM_EXT_LIBBIN) -lstack_trace \
+    -lz \
+    -lregex
+
+else
+
+LIB_LIBS = \
+    $(FOAM_LIBBIN)/libOSspecific.o \
+    -L$(FOAM_LIBBIN)/dummy -lPstream \
+    -lz
+
+endif
