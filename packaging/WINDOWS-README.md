@@ -1,4 +1,4 @@
-# OpenFOAM 14 — native Windows package
+# FoamHarbor â€” OpenFOAM 14 for Windows
 
 64-bit Windows executables, double precision, 32-bit labels, serial execution.
 The PowerShell launcher runs without MSYS2 or WSL. Building from source still
