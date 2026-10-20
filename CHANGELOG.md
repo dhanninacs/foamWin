@@ -1,3 +1,10 @@
+# MPI update (unreleased)
+
+- Added optional Microsoft MPI for local parallel meshing and solving.
+- Added decomposePar, reconstructPar, and redistributePar.
+- Added a missing-runtime prompt and serial fallback.
+- Validated cavity solving and snappyHexMesh on two and four processes.
+
 # FoamWin changelog
 
 ## v14.0.0-win.1 — 2026-10-20

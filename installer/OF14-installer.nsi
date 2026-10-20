@@ -21,7 +21,7 @@ RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 Unicode true
 
-VIProductVersion "14.0.0.0"
+VIProductVersion "14.0.0.2"
 VIAddVersionKey FileDescription " for Windows installer"
 VIAddVersionKey ProductName "${PRODUCT} for Windows"
 VIAddVersionKey CompanyName "${PUBLISHER}"
@@ -57,6 +57,8 @@ Section "!OpenFOAM 14 core (required)" SEC_CORE
     File "of14-shell.bat"
     File "of14-shell.ps1"
     File "of14-smoke-test.ps1"
+    File "of14-mesh-test.ps1"
+    File /r "OpenFOAM-14\examples"
     File "README.md"
     File /r "OpenFOAM-14\runtime-licenses"
     File /r "OpenFOAM-14\tutorials"
@@ -138,6 +140,8 @@ Section "Uninstall"
     Delete "$INSTDIR\of14-shell.bat"
     Delete "$INSTDIR\of14-shell.ps1"
     Delete "$INSTDIR\of14-smoke-test.ps1"
+    Delete "$INSTDIR\of14-mesh-test.ps1"
+    RMDir /r "$INSTDIR\examples"
     Delete "$INSTDIR\README.md"
     RMDir /r "$INSTDIR\runtime-licenses"
     RMDir /r "$INSTDIR\tutorials"

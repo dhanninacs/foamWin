@@ -59,7 +59,7 @@ See [Windows usage](packaging/WINDOWS-README.md) for installation and path detai
 
 Native Windows testing covered:
 
-- Startup checks for **all 85 packaged executables**.
+- Startup checks for **all 88 packaged executables**.
 - The legacy cavity example: mesh generation, `Mesh OK`, and icoFoam through 0.5 s.
 - The modern incompressibleFluid cavity with `foamRun` through time 10.
 - Actual installation, installed-package execution, and the Desktop shortcut.
@@ -69,7 +69,7 @@ These are execution and smoke tests, not exhaustive physical-model benchmarks.
 
 ## Limitations
 
-- **Serial execution only**; the package uses dummy MPI.
+- Optional Microsoft MPI enables local parallel solving and snappyHexMesh; serial fallback remains available.
 - **64-bit Windows**, double precision, 32-bit labels.
 - ParaView is not bundled.
 - Runtime code compilation needs additional compiler configuration.
@@ -126,3 +126,32 @@ OpenFOAM and the derived Windows patches are distributed under **GPLv3**; see
 [LICENSE](LICENSE) and [OpenFOAM COPYING](OpenFOAM-14/COPYING). Preserve the OpenFOAM
 Foundation and blueCFD/blueCAPE upstream copyright and attribution. Third-party
 runtime DLLs retain their own licenses and notices, included with the distributions.
+
+
+## Parallel meshing and solving
+
+Microsoft MPI is optional for serial work and required for parallel runs. Install
+`msmpisetup.exe` from [Microsoft MPI](https://www.microsoft.com/en-us/download/details.aspx?id=105289),
+then reopen FoamWin. If the runtime is missing, the interactive launcher prompts
+to open that page and retains serial mode. The SDK is only needed when building.
+
+From the extracted package directory, run these validated examples:
+
+```powershell
+. ./of14-shell.ps1 -Quiet -Parallel
+./of14-smoke-test.ps1 -Processes 4
+./of14-mesh-test.ps1 -Processes 4
+```
+
+For your own case, set `numberOfSubdomains` in `system/decomposeParDict` to match
+`-Processes`, select `simple` or `hierarchical`, then run `decomposePar`.
+Use `Invoke-FoamWinParallel -Processes 4 -Application icoFoam -Case <case-folder>`
+(or your solver). Run `reconstructPar -latestTime` afterwards.
+`snappyHexMesh` supports the same helper; `blockMesh` remains serial.
+The mesh example includes parallel refinement, mesh reconstruction, and quality checks.
+Scotch and Metis partitioners are not included. Local runs on two and four processes
+have been validated; multi-host operation and performance scaling have not been tested.
+
+To build the MPI additions after a serial cross-build, run
+`scripts/build-msmpi.sh <extracted-msmpi-sdk-directory>` on Linux.
+The SDK must contain `mpi.h` and the x64 `msmpi64.lib`; SDK files are not committed.

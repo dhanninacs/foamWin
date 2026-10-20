@@ -1,0 +1,11 @@
+FoamFile { format ascii; class dictionary; object controlDict; }
+startFrom startTime;
+startTime 0;
+stopAt endTime;
+endTime 1;
+deltaT 1;
+writeControl timeStep;
+writeInterval 1;
+writeFormat ascii;
+writePrecision 8;
+runTimeModifiable false;

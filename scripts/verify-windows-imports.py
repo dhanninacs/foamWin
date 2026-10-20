@@ -26,27 +26,31 @@ class PE:
   if not r:return set()
   o=self.off(r); count=self.u(o+24); arr=self.off(self.u(o+32)); return {self.string(self.off(self.u(arr+4*i))) for i in range(count)}
 
-# Validate the complete import graph before distributing binaries.
-system_dlls = {'kernel32.dll','msvcrt.dll','advapi32.dll','user32.dll','imagehlp.dll'}
-files = list(root.rglob('*.dll')) + list(root.rglob('*.exe'))
-index = {}
+# Pstream is intentionally supplied once per selectable backend.
+system_dlls = {'kernel32.dll','msvcrt.dll','advapi32.dll','user32.dll','imagehlp.dll','msmpi.dll'}
+all_files = list(root.rglob('*.dll')) + list(root.rglob('*.exe'))
+backends = [name for name in ('dummy','msmpi') if (root/'lib'/name/'libPstream.dll').is_file()]
 errors = []
-for p in files:
- key = p.name.lower()
- if key in index: errors.append(f'Windows filename collision: {index[key]} and {p}')
- index[key] = p
-cache = {}
-for p in files:
- for dll,names in PE(p).imports():
-  key = dll.lower()
-  if key in system_dlls or key.startswith(('api-ms-', 'ext-ms-')): continue
-  if key not in index:
-   errors.append(f'{p.name}: missing {dll}')
-   continue
-  if key not in cache: cache[key] = PE(index[key]).exports()
-  missing = set(names) - cache[key]
-  if missing: errors.append(f'{p.name} -> {dll}: missing exports {sorted(missing)}')
+for backend in backends:
+ files = [p for p in all_files if p.name.lower() != 'libpstream.dll' or p.parent == root/'lib'/backend]
+ index = {}
+ for p in files:
+  key = p.name.lower()
+  if key in index: errors.append(f'{backend}: Windows filename collision: {index[key]} and {p}')
+  index[key] = p
+ cache = {}
+ for p in files:
+  for dll,names in PE(p).imports():
+   key = dll.lower()
+   if key in system_dlls or key.startswith(('api-ms-', 'ext-ms-')): continue
+   if key not in index:
+    errors.append(f'{backend}: {p.name}: missing {dll}')
+    continue
+   if key not in cache: cache[key] = PE(index[key]).exports()
+   missing = set(names) - cache[key]
+   if missing: errors.append(f'{backend}: {p.name} -> {dll}: missing exports {sorted(missing)}')
+ if not errors: print(f'Import validation passed ({backend} backend): {sum(p.suffix == ".exe" for p in files)} executables')
+if not backends: errors.append('No Pstream backend is packaged')
 if errors:
- print('\n'.join(errors), file=sys.stderr)
+ print('\n'.join(errors),file=sys.stderr)
  sys.exit(1)
-print(f'Import validation passed: {sum(p.suffix == ".exe" for p in files)} executables, {sum(p.suffix == ".dll" for p in files)} DLLs')

@@ -45,7 +45,7 @@ as an optional component; it is not needed by the native launcher.
 
 ## Validation on 20 October 2026
 
-All 85 executables passed `-help` on Windows. The cavity case passed blockMesh,
+The original 85 executables passed `-help` on Windows; import checks now cover all 88 executables with both MPI backends. The cavity case passed blockMesh,
 checkMesh (Mesh OK), and icoFoam through time 0.5. This is a smoke test, not
 validation of every solver or physical model.
 
@@ -56,3 +56,28 @@ OpenFOAM constructor initialization order is corrected for MinGW.
 
 Serial only; no bundled ParaView. Runtime code compilation needs additional
 compiler setup. See the source repository for GPLv3 source and porting notes.
+
+
+## Parallel meshing and solving
+
+Microsoft MPI is optional for serial work and required for parallel runs. Install
+`msmpisetup.exe` from [Microsoft MPI](https://www.microsoft.com/en-us/download/details.aspx?id=105289),
+then reopen FoamWin. If the runtime is missing, the interactive launcher prompts
+to open that page and retains serial mode. The SDK is only needed when building.
+
+From the extracted package directory, run these validated examples:
+
+```powershell
+. ./of14-shell.ps1 -Quiet -Parallel
+./of14-smoke-test.ps1 -Processes 4
+./of14-mesh-test.ps1 -Processes 4
+```
+
+For your own case, set `numberOfSubdomains` in `system/decomposeParDict` to match
+`-Processes`, select `simple` or `hierarchical`, then run `decomposePar`.
+Use `Invoke-FoamWinParallel -Processes 4 -Application icoFoam -Case <case-folder>`
+(or your solver). Run `reconstructPar -latestTime` afterwards.
+`snappyHexMesh` supports the same helper; `blockMesh` remains serial.
+The mesh example includes parallel refinement, mesh reconstruction, and quality checks.
+Scotch and Metis partitioners are not included. Local runs on two and four processes
+have been validated; multi-host operation and performance scaling have not been tested.

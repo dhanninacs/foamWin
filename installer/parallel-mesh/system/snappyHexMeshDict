@@ -1,0 +1,43 @@
+FoamFile { format ascii; class dictionary; object snappyHexMeshDict; }
+castellatedMesh true;
+snap false;
+addLayers false;
+geometry { refineBox { type searchableBox; min (0.25 0.25 0.25); max (0.75 0.75 0.75); } }
+castellatedMeshControls
+{
+    maxLocalCells 100000;
+    maxGlobalCells 200000;
+    minRefinementCells 0;
+    maxLoadUnbalance 0.1;
+    nCellsBetweenLevels 1;
+    features ();
+    refinementSurfaces {};
+    resolveFeatureAngle 30;
+    refinementRegions { refineBox { mode inside; level 1; } }
+    locationInMesh (0.1 0.1 0.1);
+    allowFreeStandingZoneFaces true;
+}
+snapControls
+{
+    nSmoothPatch 3; tolerance 2; nSolveIter 30; nRelaxIter 5;
+    nFeatureSnapIter 10; implicitFeatureSnap false; explicitFeatureSnap true; multiRegionFeatureSnap false;
+}
+addLayersControls
+{
+    relativeSizes true; layers {}; expansionRatio 1;
+    finalLayerThickness 0.3; minThickness 0.1; nGrow 0;
+    featureAngle 60; nRelaxIter 5; nSmoothSurfaceNormals 1;
+    nSmoothNormals 3; nSmoothThickness 10; maxFaceThicknessRatio 0.5;
+    maxThicknessToMedialRatio 0.3; minMedianAxisAngle 90;
+    nBufferCellsNoExtrude 0; nLayerIter 50; nRelaxedIter 20;
+}
+meshQualityControls
+{
+    maxNonOrtho 65; maxBoundarySkewness 20; maxInternalSkewness 4;
+    maxConcave 80; minVol 1e-13; minTetQuality 1e-15; minArea -1;
+    minTwist 0.02; minDeterminant 0.001; minFaceWeight 0.02;
+    minVolRatio 0.01; minTriangleTwist -1; nSmoothScale 4; errorReduction 0.75;
+}
+debug 0;
+mergeTolerance 1e-6;
+

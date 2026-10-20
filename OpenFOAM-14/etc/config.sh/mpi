@@ -33,6 +33,10 @@
 unset MPI_ARCH_PATH
 
 case "$WM_MPLIB" in
+MSMPI)
+    export FOAM_MPI=msmpi
+    export MPI_ARCH_PATH=${MSMPI_ROOT:-$WM_THIRD_PARTY_DIR/msmpi}
+    ;;
 SYSTEMOPENMPI)
     # Use the system installed openmpi, get library directory via mpicc
     export FOAM_MPI=openmpi-system
