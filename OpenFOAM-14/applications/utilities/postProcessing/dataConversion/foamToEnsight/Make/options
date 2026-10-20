@@ -10,4 +10,4 @@ EXE_LIBS = \
     -lpolyTopoChange \
     -lsampling \
     -lgenericFvFields \
-    -llagrangian
+    -llagrangOld

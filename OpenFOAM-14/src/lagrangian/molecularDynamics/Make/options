@@ -8,4 +8,4 @@ LIB_LIBS = \
     -ltracking \
     -lfiniteVolume \
     -lmeshTools \
-    -llagrangian
+    -llagrangOld

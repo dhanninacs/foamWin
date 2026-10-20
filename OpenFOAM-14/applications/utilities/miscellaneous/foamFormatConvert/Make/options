@@ -8,4 +8,4 @@ EXE_LIBS = \
     -lmeshTools \
     -lfiniteVolume \
     -lgenericFvFields \
-    -llagrangian
+    -llagrangOld

@@ -22,7 +22,7 @@ LIB_LIBS = \
     -lpolyTopoChange \
     -lgenericFvFields \
     -lgenericLagrangianFields \
-    -llagrangian \
+    -llagrangOld \
     -lLagrangian \
     -L$(FOAM_LIBBIN) \
     $(GLIBS)

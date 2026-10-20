@@ -12,4 +12,4 @@ EXE_LIBS = \
     -lfileFormats \
     -lsampling \
     -lgenericFvFields \
-    -llagrangian
+    -llagrangOld

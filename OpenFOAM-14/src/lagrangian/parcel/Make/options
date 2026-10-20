@@ -16,7 +16,7 @@ EXE_INC = \
 
 LIB_LIBS = \
     -ltracking \
-    -llagrangian \
+    -llagrangOld \
     -lphysicalProperties \
     -lspecie \
     -lfluidThermophysicalModels \

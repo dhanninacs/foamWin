@@ -12,5 +12,5 @@ LIB_LIBS = \
     -lmeshTools \
     -ldecompositionMethods -L$(FOAM_LIBBIN)/dummy -lmetisDecomp -lscotchDecomp \
     -lpolyTopoChange \
-    -llagrangian \
+    -llagrangOld \
     -lLagrangian

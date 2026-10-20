@@ -10,5 +10,5 @@ LIB_LIBS = \
     -lfiniteVolume \
     -lmeshTools \
     -lgenericFvFields \
-    -llagrangian \
+    -llagrangOld \
     $(PROJECT_LIBS)

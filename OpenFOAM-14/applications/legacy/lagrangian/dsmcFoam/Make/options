@@ -9,5 +9,5 @@ EXE_LIBS = \
     -ltracking \
     -lmeshTools \
     -lfiniteVolume \
-    -llagrangian \
+    -llagrangOld \
     -lDSMC

@@ -9,7 +9,7 @@ EXE_INC = \
 
 EXE_LIBS = \
     -lfoamToVTK \
-    -llagrangian \
+    -llagrangOld \
     -lpolyTopoChange \
     -lgenericFvFields \
     -L$(FOAM_EXT_LIBBIN) -ltecio

@@ -108,3 +108,11 @@ Split into three files and updated `Make/files`:
 Smoke: `blockMesh && checkMesh && icoFoam` on `icoFoam/cavity` tutorial
 (passes). Full group passes as of this writing:
 `solvevers / modules / legacy / utilities` → 0 link errors.
+
+## 12. Native Windows runtime repair (20 October 2026)
+
+The original Linux link-success and smoke-test notes did not establish native
+Windows runtime compatibility. Native verification exposed missing compiler and
+stack-trace DLLs, a liblagrangian/libLagrangian filename collision, and reversed
+MinGW constructor order. These are repaired in the current package and build rules.
+See [Windows repair](packaging/WINDOWS-REPAIR.md) for evidence and scope.

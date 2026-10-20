@@ -10,5 +10,5 @@ EXE_LIBS = \
     -lmeshTools \
     -lpolyTopoChange \
     -lfiniteVolume \
-    -llagrangian \
+    -llagrangOld \
     -lmolecularDynamics

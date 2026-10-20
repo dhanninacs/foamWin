@@ -55,6 +55,11 @@ Section "!OpenFOAM 14 core (required)" SEC_CORE
     File /r "OpenFOAM-14\etc"
     File "OpenFOAM-14\COPYING"
     File "of14-shell.bat"
+    File "of14-shell.ps1"
+    File "of14-smoke-test.ps1"
+    File "README.md"
+    File /r "OpenFOAM-14\runtime-licenses"
+    File /r "OpenFOAM-14\tutorials"
     SetOutPath "$INSTDIR\platforms\${EXE_DIRNAME}\bin"
     File /r "OpenFOAM-14\platforms\${EXE_DIRNAME}\bin\*.exe"
     File /r "OpenFOAM-14\platforms\${EXE_DIRNAME}\bin\*.dll"
@@ -67,19 +72,21 @@ Section "!OpenFOAM 14 core (required)" SEC_CORE
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT}" \
         "DisplayName" "${PRODUCT} for Windows"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT}" \
-        "UninstallString" "$INSTDIR\Uninstall.exe"
+        "UninstallString" '"$INSTDIR\Uninstall.exe"'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT}" \
         "Publisher" "${PUBLISHER}"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Start Menu shortcuts" SEC_SMENU
+    SetOutPath "$INSTDIR"
     CreateDirectory "$SMPROGRAMS\${PRODUCT}"
     CreateShortCut "$SMPROGRAMS\${PRODUCT}\OpenFOAM 14 shell.lnk" "$INSTDIR\of14-shell.bat"
     CreateShortCut "$SMPROGRAMS\${PRODUCT}\Uninstall ${PRODUCT}.lnk" "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Desktop shortcut" SEC_DESKTOP
+    SetOutPath "$INSTDIR"
     CreateShortCut "$DESKTOP\OpenFOAM 14.lnk" "$INSTDIR\of14-shell.bat"
 SectionEnd
 
@@ -122,13 +129,18 @@ Section /o "Install MSYS2 automatically (tick if you don't have MSYS2)" SEC_MSYS
 SectionEnd
 
 Function LaunchShell
-    Exec '"$INSTDIR\of14-shell.bat"'
+    ExecShell "open" "$INSTDIR\of14-shell.bat"
 FunctionEnd
 
 ;-------------------------------------------------------------- uninstaller
 Section "Uninstall"
     Delete "$INSTDIR\Uninstall.exe"
     Delete "$INSTDIR\of14-shell.bat"
+    Delete "$INSTDIR\of14-shell.ps1"
+    Delete "$INSTDIR\of14-smoke-test.ps1"
+    Delete "$INSTDIR\README.md"
+    RMDir /r "$INSTDIR\runtime-licenses"
+    RMDir /r "$INSTDIR\tutorials"
     RMDir /r "$INSTDIR\etc"
     RMDir /r "$INSTDIR\platforms"
     Delete "$SMPROGRAMS\${PRODUCT}\*.*"

@@ -25,8 +25,8 @@ build() {
 
 # ---- Third-party ----------------------------------------------------------
 mkdir -p "$WM_THIRD_PARTY_DIR/stack_trace/lnInclude"
-cp ../../stack_trace/stack_trace.h "$WM_THIRD_PARTY_DIR/stack_trace/lnInclude/" 2>/dev/null || true
-(cd "$WM_THIRD_PARTY_DIR/stack_trace" && wmake libso)
+cp "$WM_THIRD_PARTY_DIR/third-party/stack_trace/stack_trace.h" "$WM_THIRD_PARTY_DIR/stack_trace/lnInclude/"
+(cd "$WM_THIRD_PARTY_DIR/third-party/stack_trace" && wmake libso)
 
 # ---- Core: Pstream static -> OSspecific -> OpenFOAM -> Pstream dll -------
 (cd src/Pstream/dummy && wmake lib)

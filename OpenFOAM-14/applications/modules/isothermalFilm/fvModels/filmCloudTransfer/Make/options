@@ -19,5 +19,5 @@ EXE_INC = \
 
 LIB_LIBS = \
     -lisothermalFilmSolver \
-    -llagrangian \
+    -llagrangOld \
     -llagrangianParcel

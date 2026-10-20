@@ -23,3 +23,15 @@ Thumbs.db
 OF14-win-setup.exe
 OF14-win.zip
 *.deb
+
+# Local credentials, machine state, and validation output
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+__pycache__/
+*.pyc
+validation/

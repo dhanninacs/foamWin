@@ -34,7 +34,7 @@ LIB_LIBS = \
     -lsolidThermophysicalTransportModels \
     -lmeshTools \
     -lsurfMesh \
-    -llagrangian \
+    -llagrangOld \
     -lfileFormats \
     -lsampling \
     -lsurfMesh

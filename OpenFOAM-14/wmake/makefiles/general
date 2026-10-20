@@ -122,6 +122,14 @@ DEPENDENCIES=$(SOURCE:%=$(OBJECTS_DIR)/%.dep)
 BASENAMES=$(basename $(SOURCE))
 OBJECTS=$(BASENAMES:%=$(OBJECTS_DIR)/%.o)
 
+# MinGW .ctors are called backwards. Preserve the source initialization order.
+ifeq ($(WM_OSTYPE),MSwindows)
+reverseObjects = $(if $(strip $(1)),$(call reverseObjects,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)))
+LINK_OBJECTS = $(call reverseObjects,$(OBJECTS))
+else
+LINK_OBJECTS = $(OBJECTS)
+endif
+
 
 #------------------------------------------------------------------------------
 # Set header file include paths
@@ -151,7 +159,7 @@ silent:
 $(EXE): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(EXE)
 	$(call QUIET_MESSAGE,ld,$(EXE))
-	$E $(LINKEXE) $(OBJECTS) -L$(LIB_PLATFORMS) \
+	$E $(LINKEXE) $(LINK_OBJECTS) -L$(LIB_PLATFORMS) \
 	    $(EXE_LIBS) $(PROJECT_LIBS) $(SYS_LIBS) \
 	    $(LINK_LIBS) $(GLIBS) -o $(EXE)
 
@@ -161,7 +169,7 @@ exe: $(SEXE) | silent
 $(SEXE): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(SEXE)
 	$(call QUIET_MESSAGE,ld,$(SEXE))
-	$E $(LINKEXE) $(OBJECTS) $(EXE_LIBS) \
+	$E $(LINKEXE) $(LINK_OBJECTS) $(EXE_LIBS) \
 	    $(SYS_LIBS) $(LINK_LIBS) $(GLIBS) -o $(SEXE)
 
 
@@ -178,7 +186,7 @@ libso: $(LIB).$(SO) | silent
 $(LIB).$(SO): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(LIB)
 	$(call QUIET_MESSAGE,ld,$(LIB).$(SO))
-	$E $(LINKLIBSO) $(OBJECTS) -L$(LIB_PLATFORMS) \
+	$E $(LINKLIBSO) $(LINK_OBJECTS) -L$(LIB_PLATFORMS) \
 	    $(PROJECT_LIBS) $(LIB_LIBS) $(GLIB_LIBS) -o $(LIB).$(SO)
 
 .PHONY: lib

@@ -12,7 +12,7 @@ EXE_LIBS = \
     -lmeshTools \
     -lparallel \
     -ldecompositionMethods \
-    -llagrangian \
+    -llagrangOld \
     -lLagrangian \
     -lgenericFvFields \
     -lgenericLagrangianFields

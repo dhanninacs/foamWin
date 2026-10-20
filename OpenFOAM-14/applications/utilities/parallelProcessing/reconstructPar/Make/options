@@ -10,7 +10,7 @@ EXE_LIBS = \
     -lfiniteVolume \
     -lmeshTools \
     -lparallel \
-    -llagrangian \
+    -llagrangOld \
     -lLagrangian \
     -lgenericFvFields \
     -lgenericLagrangianFields

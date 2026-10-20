@@ -12,6 +12,6 @@ LIB_LIBS = \
     -lfiniteVolume \
     -lphysicalProperties \
     -lmeshTools \
-    -llagrangian \
+    -llagrangOld \
     -llagrangianParcel \
     -lutilityFunctionObjects

@@ -8,5 +8,5 @@ EXE_INC = \
 EXE_LIBS = \
     -lmeshTools \
     -lfiniteVolume \
-    -llagrangian \
+    -llagrangOld \
     -lmolecularDynamics

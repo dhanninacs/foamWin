@@ -1,6 +1,11 @@
 *.bat text eol=crlf
 *.sh text eol=lf
-*.nsi text
+*.nsi text eol=lf
 *.ps1 text eol=crlf
-*.C text
-*.H text
+*.py text eol=lf
+*.md text eol=lf
+*.C text eol=lf
+*.H text eol=lf
+**/Make/files text eol=lf
+**/Make/options text eol=lf
+OpenFOAM-14/wmake/** text eol=lf

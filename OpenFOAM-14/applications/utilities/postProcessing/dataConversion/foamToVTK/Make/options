@@ -10,6 +10,6 @@ EXE_INC = \
 EXE_LIBS = \
     -lfoamToVTK \
     -lpolyTopoChange \
-    -llagrangian \
+    -llagrangOld \
     -lgenericFvFields \
     -lfileFormats

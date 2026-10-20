@@ -8,7 +8,7 @@ EXE_INC = \
 
 EXE_LIBS = \
     -lfiniteVolume \
-    -llagrangian \
+    -llagrangOld \
     -lmeshTools \
     -lsampling \
     -lgenericFvFields \

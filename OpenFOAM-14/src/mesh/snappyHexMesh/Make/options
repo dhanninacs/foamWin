@@ -17,7 +17,7 @@ LIB_LIBS = \
     -lpolyTopoChange \
     -lpointMeshMovers \
     -lfiniteVolume \
-    -llagrangian \
+    -llagrangOld \
     -lmeshTools \
     -lmeshCheck \
     -lfileFormats \
