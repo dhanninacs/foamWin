@@ -10,4 +10,7 @@ LIB_LIBS = \
     -lpolyTopoChange \
     -llagrangOld \
     -lgenericFvFields \
-    -lfileFormats
+    -lfileFormats \
+    -lfiniteVolume \
+    -lmeshTools \
+    -ltracking

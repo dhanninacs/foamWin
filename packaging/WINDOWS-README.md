@@ -45,7 +45,7 @@ as an optional component; it is not needed by the native launcher.
 
 ## Validation on 20 October 2026
 
-The original 85 executables passed `-help` on Windows; import checks now cover all 88 executables with both MPI backends. The cavity case passed blockMesh,
+The original 85 executables passed `-help` on Windows; import checks now cover all 91 executables with both MPI backends. The cavity case passed blockMesh,
 checkMesh (Mesh OK), and icoFoam through time 0.5. This is a smoke test, not
 validation of every solver or physical model.
 
@@ -81,3 +81,14 @@ Use `Invoke-FoamWinParallel -Processes 4 -Application icoFoam -Case <case-folder
 The mesh example includes parallel refinement, mesh reconstruction, and quality checks.
 Scotch and Metis partitioners are not included. Local runs on two and four processes
 have been validated; multi-host operation and performance scaling have not been tested.
+
+## Attaching a CFD application
+
+The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,
+plus the existing meshing, solver and parallel tools. `of14-env.ps1` returns a
+JSON environment and tool inventory for a Windows host adapter; no Bash is needed.
+Run `./of14-runtime-test.ps1` to validate feature extraction, modern solving,
+velocity post-processing and VTK export. See the source repository's
+[attachment guide](https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md)
+for the interface and Windows runner requirements. The GUI application, CAD/VTK
+Python dependencies, cfMesh and Gmsh generation are separate from this engine.

@@ -12,7 +12,7 @@ if (-not (Test-Path "$PSScriptRoot/OpenFOAM-14/etc/configDict")) {
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 & robocopy "$PSScriptRoot/OpenFOAM-14" "$InstallDir/OpenFOAM-14" /E /NFL /NDL /NJH /NJS | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
-foreach ($name in @('of14-shell.bat','of14-shell.ps1','of14-smoke-test.ps1','of14-mesh-test.ps1','README.md')) {
+foreach ($name in @('of14-shell.bat','of14-shell.ps1','of14-smoke-test.ps1','of14-mesh-test.ps1','of14-env.ps1','of14-runtime-test.ps1','README.md')) {
     Copy-Item "$PSScriptRoot/$name" $InstallDir -Force
 }
 if (Test-Path "$PSScriptRoot/runtime-licenses") {

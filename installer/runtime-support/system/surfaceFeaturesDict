@@ -1,0 +1,4 @@
+FoamFile { format ascii; class dictionary; object surfaceFeaturesDict; }
+surfaces ("cube.stl");
+includedAngle 120;
+writeObj yes;

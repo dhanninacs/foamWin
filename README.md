@@ -11,7 +11,8 @@ The Windows binaries run without MSYS2 or WSL. Building from source requires Lin
 
 ## Download and install
 
-The latest release is **v14.0.0-win.2**, adding optional Microsoft MPI.
+The latest release is **v14.0.0-win.3**, adding native application attachment support.
+Microsoft MPI support was introduced in v14.0.0-win.2.
 The original serial release remains available as v14.0.0-win.1.
 Its distribution files retain the tested OpenFOAM package names:
 
@@ -60,7 +61,7 @@ See [Windows usage](packaging/WINDOWS-README.md) for installation and path detai
 
 Native Windows testing covered:
 
-- Startup checks for **all 88 packaged executables**.
+- Startup checks for **all 91 packaged executables**.
 - The legacy cavity example: mesh generation, `Mesh OK`, and icoFoam through 0.5 s.
 - The modern incompressibleFluid cavity with `foamRun` through time 10.
 - Actual installation, installed-package execution, and the Desktop shortcut.
@@ -156,3 +157,14 @@ have been validated; multi-host operation and performance scaling have not been 
 To build the MPI additions after a serial cross-build, run
 `scripts/build-msmpi.sh <extracted-msmpi-sdk-directory>` on Linux.
 The SDK must contain `mpi.h` and the x64 `msmpi64.lib`; SDK files are not committed.
+
+## Attaching a CFD application
+
+The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,
+plus the existing meshing, solver and parallel tools. `of14-env.ps1` returns a
+JSON environment and tool inventory for a Windows host adapter; no Bash is needed.
+Run `./of14-runtime-test.ps1` to validate feature extraction, modern solving,
+velocity post-processing and VTK export. See the source repository's
+[attachment guide](https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md)
+for the interface and Windows runner requirements. The GUI application, CAD/VTK
+Python dependencies, cfMesh and Gmsh generation are separate from this engine.

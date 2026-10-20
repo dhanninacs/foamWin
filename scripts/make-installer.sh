@@ -29,9 +29,12 @@ done
 FIXTURE=tutorials/legacy/incompressible/icoFoam/cavity/cavity
 mkdir -p "$STAGE/OpenFOAM-14/$(dirname "$FIXTURE")"
 cp -a "$SRC/$FIXTURE" "$STAGE/OpenFOAM-14/$FIXTURE"
-cp "$REPO/installer/"{of14-shell.bat,of14-shell.ps1,of14-smoke-test.ps1,of14-mesh-test.ps1,setup-openfoam14.ps1,LICENSE.txt,OF14-installer.nsi} "$STAGE/"
+cp "$REPO/installer/"{of14-shell.bat,of14-shell.ps1,of14-smoke-test.ps1,of14-mesh-test.ps1,of14-env.ps1,of14-runtime-test.ps1,setup-openfoam14.ps1,LICENSE.txt,OF14-installer.nsi} "$STAGE/"
 mkdir -p "$STAGE/OpenFOAM-14/examples"
 cp -a "$REPO/installer/parallel-mesh" "$STAGE/OpenFOAM-14/examples/parallelMesh"
+cp -a "$REPO/installer/runtime-support" "$STAGE/OpenFOAM-14/examples/runtimeSupport"
+mkdir -p "$STAGE/OpenFOAM-14/tutorials/incompressibleFluid"
+cp -a "$SRC/tutorials/incompressibleFluid/cavity" "$STAGE/OpenFOAM-14/tutorials/incompressibleFluid/cavity"
 cp "$REPO/packaging/WINDOWS-README.md" "$STAGE/README.md"
 mkdir -p "$STAGE/runtime-licenses"
 cp /usr/share/doc/gcc-mingw-w64-x86-64-win32-runtime/copyright "$STAGE/runtime-licenses/gcc-mingw-w64.txt"
@@ -39,6 +42,6 @@ cp -a "$STAGE/runtime-licenses" "$STAGE/OpenFOAM-14/"
 python3 "$REPO/scripts/verify-windows-imports.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS"
 (cd "$STAGE" && makensis -V2 OF14-installer.nsi)
 cp "$STAGE/OF14-win-setup.exe" "$OUT/"
-(cd "$STAGE" && zip -qr "$STAGE/OF14-win.zip" OpenFOAM-14 of14-shell.bat of14-shell.ps1 of14-smoke-test.ps1 of14-mesh-test.ps1 setup-openfoam14.ps1 README.md LICENSE.txt runtime-licenses)
+(cd "$STAGE" && zip -qr "$STAGE/OF14-win.zip" OpenFOAM-14 of14-shell.bat of14-shell.ps1 of14-smoke-test.ps1 of14-mesh-test.ps1 of14-env.ps1 of14-runtime-test.ps1 setup-openfoam14.ps1 README.md LICENSE.txt runtime-licenses)
 cp "$STAGE/OF14-win.zip" "$OUT/"
 echo "Created $OUT/OF14-win-setup.exe and $OUT/OF14-win.zip"

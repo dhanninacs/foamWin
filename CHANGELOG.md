@@ -1,3 +1,10 @@
+# v14.0.0-win.3 — Native application engine support
+
+- Added surfaceFeatures, foamPostProcess, foamToVTK and the VTK export library.
+- Added an explicit JSON environment/tool handshake for native Windows hosts.
+- Added a synthetic runtime workflow test and the modern cavity tutorial.
+- Documented application attachment, MPI invocation and Windows host requirements.
+
 # v14.0.0-win.2 — MPI update
 
 - Added optional Microsoft MPI for local parallel meshing and solving.
