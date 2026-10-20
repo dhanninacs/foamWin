@@ -1,4 +1,4 @@
-# MPI update (unreleased)
+# v14.0.0-win.2 — MPI update
 
 - Added optional Microsoft MPI for local parallel meshing and solving.
 - Added decomposePar, reconstructPar, and redistributePar.

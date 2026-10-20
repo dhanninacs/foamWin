@@ -11,7 +11,8 @@ The Windows binaries run without MSYS2 or WSL. Building from source requires Lin
 
 ## Download and install
 
-The initial release is **v14.0.0-win.1 — FoamWin 14 for Windows — Initial Release**.
+The latest release is **v14.0.0-win.2**, adding optional Microsoft MPI.
+The original serial release remains available as v14.0.0-win.1.
 Its distribution files retain the tested OpenFOAM package names:
 
 | File | Purpose |
@@ -19,7 +20,7 @@ Its distribution files retain the tested OpenFOAM package names:
 | `OF14-win-setup.exe` | Guided installer, Desktop/Start Menu shortcuts, and uninstaller |
 | `OF14-win.zip` | Portable distribution with a PowerShell installation option |
 
-Download these assets from the repository's GitHub Releases page once published.
+Download these assets from [GitHub Releases](https://github.com/dhanninacs/foamWin/releases/latest).
 The source archive alone does not contain the compiled Windows binaries.
 
 For the installer, run `OF14-win-setup.exe` and approve the Windows administrator
