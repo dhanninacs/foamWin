@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,20 +23,21 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "LagrangianFieldReconstructor.H"
-#include "LagrangianFields.H"
+#include "lagrangianFieldReconstructor.H"
 #include "IOobjectList.H"
+#include "CompactIOField.H"
+#include "cloud.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-template<class GeoField>
-bool Foam::LagrangianFieldReconstructor::reconstructs
+template<class FieldType>
+bool Foam::lagrangianFieldReconstructor::reconstructs
 (
     const IOobjectList& objects,
     const HashSet<word>& selectedFields
 )
 {
-    IOobjectList fields = objects.lookupClass(GeoField::typeName);
+    IOobjectList fields = objects.lookupClass(FieldType::typeName);
 
     if (fields.size() && selectedFields.empty())
     {
@@ -58,170 +59,23 @@ bool Foam::LagrangianFieldReconstructor::reconstructs
 template
 <
     class Type,
-    template<class> class PrimitiveField,
-    template<class, class, template<class> class> class GeoField
+    template<class> class ReadIOContainer,
+    template<class> class IOContainer
 >
-Foam::tmp<PrimitiveField<Type>>
-Foam::LagrangianFieldReconstructor::reconstructLagrangianPrimitiveField
-(
-    const PtrList<GeoField<Type, LagrangianMesh, PrimitiveField>>&
-        procFields
-) const
-{
-    tmp<PrimitiveField<Type>> tresult
-    (
-        new PrimitiveField<Type>(completeMesh_.size())
-    );
-    PrimitiveField<Type>& result = tresult.ref();
-
-    // Expand dynamic primitive fields to their full size
-    result.setSize(completeMesh_.size());
-
-    label i0 = 0;
-    forAll(procMeshes_, proci)
-    {
-        SubList<Type>(result, procMeshes_[proci].size(), i0) =
-            procFields[proci].primitiveField();
-
-        i0 += procMeshes_[proci].size();
-    }
-
-    return tresult;
-}
-
-
-template<class Type, template<class> class PrimitiveField>
-Foam::tmp<Foam::DimensionedField<Type, Foam::LagrangianMesh, PrimitiveField>>
-Foam::LagrangianFieldReconstructor::reconstructLagrangianField
-(
-    const PtrList<DimensionedField<Type, LagrangianMesh, PrimitiveField>>&
-        procFields
-) const
-{
-    return
-        tmp<DimensionedField<Type, LagrangianMesh, PrimitiveField>>
-        (
-            new DimensionedField<Type, LagrangianMesh, PrimitiveField>
-            (
-                IOobject
-                (
-                    procFields[0].name(),
-                    completeMesh_.time().name(),
-                    completeMesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                completeMesh_,
-                procFields[0].dimensions(),
-                reconstructLagrangianPrimitiveField(procFields)()
-            )
-        );
-}
-
-
-template<class Type, template<class> class PrimitiveField>
-Foam::tmp<Foam::GeometricField<Type, Foam::LagrangianMesh, PrimitiveField>>
-Foam::LagrangianFieldReconstructor::reconstructLagrangianField
-(
-    const PtrList<GeometricField<Type, LagrangianMesh, PrimitiveField>>&
-        procFields
-) const
-{
-    // Construct a list of patch fields. Clone the global fields. Ignore
-    // processor-specific ones. Note that we supply the processor-zero field as
-    // the internal field reference. This is a placeholder and will get
-    // replaced by the complete field when this set of patch fields is cloned
-    // to produce the final field.
-    PtrList<LagrangianPatchField<Type>> completePatchFields
-    (
-        completeMesh_.boundary().size()
-    );
-    forAll(completeMesh_.boundary(), completePatchi)
-    {
-        completePatchFields.set
-        (
-            completePatchi,
-            procFields[0].boundaryField()[completePatchi].clone
-            (
-                procFields[0]
-            )
-        );
-    }
-
-    // Construct and return the complete field
-    return
-        tmp<GeometricField<Type, LagrangianMesh, PrimitiveField>>
-        (
-            new GeometricField<Type, LagrangianMesh, PrimitiveField>
-            (
-                IOobject
-                (
-                    procFields[0].name(),
-                    completeMesh_.time().name(),
-                    completeMesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                completeMesh_,
-                procFields[0].dimensions(),
-                reconstructLagrangianPrimitiveField(procFields)(),
-                completePatchFields,
-                procFields[0].sources().table()
-            )
-        );
-}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class GeoField>
-Foam::tmp<GeoField>
-Foam::LagrangianFieldReconstructor::reconstructField
-(
-    const IOobject& fieldIo
-) const
-{
-    // Read the fields from all the processors
-    PtrList<GeoField> procFields(procMeshes_.size());
-    forAll(procMeshes_, proci)
-    {
-        procFields.set
-        (
-            proci,
-            new GeoField
-            (
-                IOobject
-                (
-                    fieldIo.name(),
-                    procMeshes_[proci].time().name(),
-                    procMeshes_[proci],
-                    IOobject::MUST_READ,
-                    IOobject::NO_WRITE,
-                    false
-                ),
-                procMeshes_[proci]
-            )
-        );
-    }
-
-    // Reconstruct and return
-    return reconstructLagrangianField(procFields);
-}
-
-
-template<class GeoField>
-void Foam::LagrangianFieldReconstructor::reconstructFields
+void Foam::lagrangianFieldReconstructor::reconstructFields
 (
     const IOobjectList& objects,
     const HashSet<word>& selectedFields
 ) const
 {
-    IOobjectList fields = objects.lookupClass(GeoField::typeName);
+    const word& fieldClassName = ReadIOContainer<Type>::typeName;
+
+    IOobjectList fields = objects.lookupClass(fieldClassName);
 
     if (fields.size())
     {
-        Info<< nl << "    Reconstructing " << GeoField::typeName << "s"
-            << nl << endl;
+        Info<< nl << "    Reconstructing lagrangian "
+            << fieldClassName << "s" << nl << endl;
 
         forAllConstIter(IOobjectList, fields, fieldIter)
         {
@@ -233,10 +87,90 @@ void Foam::LagrangianFieldReconstructor::reconstructFields
             {
                 Info<< "        " << fieldIter()->name() << endl;
 
-                reconstructField<GeoField>(*fieldIter())().write();
+                reconstructField<Type, ReadIOContainer, IOContainer>
+                (
+                    *fieldIter()
+                )().write();
             }
         }
     }
+}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+template
+<
+    class Type,
+    template<class> class ReadIOContainer,
+    template<class> class IOContainer
+>
+Foam::tmp<IOContainer<Type>>
+Foam::lagrangianFieldReconstructor::reconstructField
+(
+    const IOobject& fieldIoObject
+) const
+{
+    // Construct the complete field
+    tmp<IOContainer<Type>> tfield
+    (
+        new IOContainer<Type>
+        (
+            IOobject
+            (
+                fieldIoObject.name(),
+                completeMesh_.time().name(),
+                lagrangian::cloud::prefix/cloudName_,
+                completeMesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            Field<Type>(0)
+        )
+    );
+    Field<Type>& field = tfield.ref();
+
+    // Combine the processor fields into the complete field
+    forAll(procMeshes_, proci)
+    {
+        typeIOobject<ReadIOContainer<Type>> localIOobject
+        (
+            fieldIoObject.name(),
+            procMeshes_[proci].time().name(),
+            lagrangian::cloud::prefix/cloudName_,
+            procMeshes_[proci],
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        );
+
+        if (localIOobject.headerOk())
+        {
+            IOContainer<Type> fieldi(localIOobject);
+
+            label offset = field.size();
+            field.setSize(offset + fieldi.size());
+
+            forAll(fieldi, j)
+            {
+                field[offset + j] = fieldi[j];
+            }
+        }
+    }
+
+    return tfield;
+}
+
+
+template<class Type>
+void Foam::lagrangianFieldReconstructor::reconstructFields
+(
+    const IOobjectList& o,
+    const HashSet<word>& sf
+) const
+{
+    reconstructFields<Type, IOField, IOField>(o, sf);
+    reconstructFields<Field<Type>, IOField, CompactIOField>(o, sf);
+    reconstructFields<Field<Type>, CompactIOField, CompactIOField>(o, sf);
 }
 
 

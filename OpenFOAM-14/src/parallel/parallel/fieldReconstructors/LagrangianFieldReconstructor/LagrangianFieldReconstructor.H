@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,22 +22,21 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::LagrangianFieldReconstructor
+    Foam::lagrangianFieldReconstructor
 
 Description
-    Lagrangian field reconstructor
+    Lagrangian field reconstructor.
 
 SourceFiles
-    LagrangianFieldReconstructor.C
-    LagrangianFieldReconstructorTemplates.C
+    lagrangianFieldReconstructor.C
+    lagrangianFieldReconstructorTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef LagrangianFieldReconstructor_H
-#define LagrangianFieldReconstructor_H
+#ifndef lagrangianFieldReconstructor_H
+#define lagrangianFieldReconstructor_H
 
 #include "fvMesh.H"
-#include "LagrangianMesh.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -45,69 +44,53 @@ namespace Foam
 {
 
 class IOobjectList;
+class passiveParticleCloud;
 
 /*---------------------------------------------------------------------------*\
-                  Class LagrangianFieldReconstructor Declaration
+                  Class lagrangianFieldReconstructor Declaration
 \*---------------------------------------------------------------------------*/
 
-class LagrangianFieldReconstructor
+class lagrangianFieldReconstructor
 {
     // Private Data
 
-        //- The complete mesh
-        LagrangianMesh completeMesh_;
+        //- Reference to complete mesh
+        const fvMesh& completeMesh_;
 
         //- List of processor meshes
-        PtrList<LagrangianMesh> procMeshes_;
+        const PtrList<fvMesh>& procMeshes_;
+
+        //- List of processor face addressing lists
+        const labelListList& faceProcAddressing_;
+
+        //- List of processor cell addressing lists
+        const labelListList& cellProcAddressing_;
+
+        //- The name of the cloud
+        const word cloudName_;
 
 
     // Private Member Functions
 
         //- Return whether anything in the object list gets reconstructed
-        template<class GeoField>
+        template<class FieldType>
         static bool reconstructs
         (
             const IOobjectList& objects,
             const HashSet<word>& selectedFields
         );
 
-        //- Return the reconstructed primitive field given a list of processor
-        //  (internal) fields
+        //- Read, reconstruct and write all fields
         template
         <
             class Type,
-            template<class> class PrimitiveField,
-            template<class, class, template<class> class> class GeoField
+            template<class> class ReadIOContainer,
+            template<class> class IOContainer
         >
-        tmp<PrimitiveField<Type>> reconstructLagrangianPrimitiveField
+        void reconstructFields
         (
-            const PtrList
-            <
-                GeoField<Type, LagrangianMesh, PrimitiveField>
-            >& procFields
-        ) const;
-
-        //- Return the reconstructed internal field given a list of processor
-        //  internal fields
-        template<class Type, template<class> class PrimitiveField>
-        tmp<DimensionedField<Type, LagrangianMesh, PrimitiveField>>
-        reconstructLagrangianField
-        (
-            const PtrList
-            <
-                DimensionedField<Type, LagrangianMesh, PrimitiveField>
-            >& procFields
-        ) const;
-
-        //- Return the reconstructed field given a list of processor fields
-        template<class Type, template<class> class PrimitiveField>
-        tmp<GeometricField<Type, LagrangianMesh, PrimitiveField>>
-        reconstructLagrangianField
-        (
-            const PtrList
-            <
-                GeometricField<Type, LagrangianMesh, PrimitiveField>
-            >& procFields
+            const IOobjectList& objects,
+            const HashSet<word>& selectedFields
         ) const;
 
 
@@ -116,39 +99,27 @@ public:
     // Constructors
 
         //- Construct from components
-        LagrangianFieldReconstructor
+        lagrangianFieldReconstructor
         (
-            const fvMesh& completeFvMesh,
-            const PtrList<fvMesh>& procFvMeshes,
+            const fvMesh& completeMesh,
+            const PtrList<fvMesh>& procMeshes,
             const labelListList& faceProcAddressing,
             const labelListList& cellProcAddressing,
-            const word& LagrangianName
+            const word& cloudName
         );
 
         //- Disallow default bitwise copy construction
-        LagrangianFieldReconstructor
+        lagrangianFieldReconstructor
         (
-            const LagrangianFieldReconstructor&
+            const lagrangianFieldReconstructor&
         ) = delete;
 
 
     //- Destructor
-    ~LagrangianFieldReconstructor();
+    ~lagrangianFieldReconstructor();
 
 
     // Member Functions
-
-        //- Access the complete mesh
-        inline const LagrangianMesh& completeMesh() const
-        {
-            return completeMesh_;
-        }
-
-        //- Access the list of processor meshes
-        inline const PtrList<LagrangianMesh>& procMeshes() const
-        {
-            return procMeshes_;
-        }
 
         //- Return whether anything in the object list gets reconstructed
         static bool reconstructs
@@ -157,15 +128,26 @@ public:
             const HashSet<word>& selectedFields
         );
 
+        //- Generate the reconstructed cloud
+        autoPtr<passiveParticleCloud> completeCloud() const;
+
         //- Write the reconstructed positions
         void reconstructPositions() const;
 
         //- Read and reconstruct a field
-        template<class GeoField>
-        tmp<GeoField> reconstructField(const IOobject&) const;
+        template
+        <
+            class Type,
+            template<class> class ReadIOContainer,
+            template<class> class IOContainer
+        >
+        tmp<IOContainer<Type>> reconstructField
+        (
+            const IOobject& fieldIoObject
+        ) const;
 
-        //- Read, reconstruct and write all/selected Lagrangian fields
-        template<class GeoField>
+        //- Read, reconstruct and write all/selected lagrangian fields
+        template<class Type>
         void reconstructFields
         (
             const IOobjectList& objects,
@@ -176,7 +158,7 @@ public:
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const LagrangianFieldReconstructor&) = delete;
+        void operator=(const lagrangianFieldReconstructor&) = delete;
 };
 
 
@@ -187,7 +169,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "LagrangianFieldReconstructorTemplates.C"
+    #include "lagrangianFieldReconstructorTemplates.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

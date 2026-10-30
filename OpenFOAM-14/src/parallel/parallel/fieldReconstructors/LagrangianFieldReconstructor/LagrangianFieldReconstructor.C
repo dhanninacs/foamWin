@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,102 +23,38 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "LagrangianFieldReconstructor.H"
+#include "autoPtr.H"
+#include "lagrangianFieldReconstructor.H"
+#include "passiveParticleCloud.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::LagrangianFieldReconstructor::LagrangianFieldReconstructor
+Foam::lagrangianFieldReconstructor::lagrangianFieldReconstructor
 (
-    const fvMesh& completeFvMesh,
-    const PtrList<fvMesh>& procFvMeshes,
+    const fvMesh& completeMesh,
+    const PtrList<fvMesh>& procMeshes,
     const labelListList& faceProcAddressing,
     const labelListList& cellProcAddressing,
-    const word& LagrangianName
+    const word& cloudName
 )
 :
-    completeMesh_(completeFvMesh, LagrangianName, IOobject::NO_READ),
-    procMeshes_(procFvMeshes.size())
-{
-    // Read the processor meshes
-    forAll(procMeshes_, proci)
-    {
-        procMeshes_.set
-        (
-            proci,
-            new LagrangianMesh(procFvMeshes[proci], LagrangianName)
-        );
-    }
-
-    // Determine the size of the complete mesh
-    label completeSize = 0;
-    forAll(procMeshes_, proci)
-    {
-        completeSize += procMeshes_[proci].size();
-    }
-
-    // Construct complete geometry and topology
-    barycentricField completeCoordinates(completeSize);
-    labelField completeCellIndices(completeSize, -1);
-    labelField completeFaceIndices(completeSize, -1);
-    labelField completeFaceTriIndices(completeSize, -1);
-    label i0 = 0;
-    forAll(procMeshes_, proci)
-    {
-        const label procSize = procMeshes_[proci].size();
-
-        const labelField& procCelli = procMeshes_[proci].celli();
-        const labelField& procFacei = procMeshes_[proci].facei();
-
-        SubList<barycentric>(completeCoordinates, procSize, i0) =
-            procMeshes_[proci].coordinates();
-        SubList<label>(completeCellIndices, procSize, i0) =
-            UIndirectList<label>(cellProcAddressing[proci], procCelli)();
-        SubList<label>(completeFaceIndices, procSize, i0) =
-            UIndirectList<label>(faceProcAddressing[proci], procFacei)();
-        SubList<label>(completeFaceTriIndices, procSize, i0) =
-            procMeshes_[proci].faceTrii();
-
-        i0 += procMeshes_[proci].size();
-    }
-
-    // If the owner has changed then the face will be numbered around in
-    // the opposite direction. Change the face triangle index accordingly.
-    const faceList& completeFaces = completeMesh_.poly().faces();
-    forAll(completeCoordinates, i)
-    {
-        if (completeFaceIndices[i] < 0)
-        {
-            const label completeFacei = - completeFaceIndices[i] - 1;
-            const label completeFaceSize = completeFaces[completeFacei].size();
-
-            completeFaceTriIndices[i] =
-                completeFaceSize - 1 - completeFaceTriIndices[i];
-        }
-    }
-
-    // Remove the turning information to recover the actual face indices
-    completeFaceIndices = mag(completeFaceIndices) - 1;
-
-    // Inject into the complete mesh
-    completeMesh_.inject
-    (
-        completeCoordinates,
-        completeCellIndices,
-        completeFaceIndices,
-        completeFaceTriIndices
-    );
-}
+    completeMesh_(completeMesh),
+    procMeshes_(procMeshes),
+    faceProcAddressing_(faceProcAddressing),
+    cellProcAddressing_(cellProcAddressing),
+    cloudName_(cloudName)
+{}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::LagrangianFieldReconstructor::~LagrangianFieldReconstructor()
+Foam::lagrangianFieldReconstructor::~lagrangianFieldReconstructor()
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-bool Foam::LagrangianFieldReconstructor::reconstructs
+bool Foam::lagrangianFieldReconstructor::reconstructs
 (
     const IOobjectList& objects,
     const HashSet<word>& selectedFields
@@ -126,40 +62,80 @@ bool Foam::LagrangianFieldReconstructor::reconstructs
 {
     bool result = false;
 
-    #define RECONSTRUCTS_LAGRANGIAN_FIELDS_TYPE(Type, nullArg)                 \
-        result =                                                               \
-            result                                                             \
-         || reconstructs<LagrangianField<Type>>                                \
-            (                                                                  \
-                objects,                                                       \
-                selectedFields                                                 \
-            )                                                                  \
-         || reconstructs<LagrangianDynamicField<Type>>                         \
-            (                                                                  \
-                objects,                                                       \
-                selectedFields                                                 \
-            )                                                                  \
-         || reconstructs<LagrangianInternalField<Type>>                        \
-            (                                                                  \
-                objects,                                                       \
-                selectedFields                                                 \
-            )                                                                  \
-         || reconstructs<LagrangianInternalDynamicField<Type>>                 \
-            (                                                                  \
-                objects,                                                       \
-                selectedFields                                                 \
-            );
-    RECONSTRUCTS_LAGRANGIAN_FIELDS_TYPE(label, )
-    FOR_ALL_FIELD_TYPES(RECONSTRUCTS_LAGRANGIAN_FIELDS_TYPE)
-    #undef RECONSTRUCTS_LAGRANGIAN_FIELDS_TYPE
+    #define DO_LAGRANGIAN_FIELDS_TYPE(Type, nullArg)                           \
+        result = result                                                        \
+         || reconstructs<IOField<Type>>(objects, selectedFields)               \
+         || reconstructs<IOField<Field<Type>>>(objects, selectedFields)        \
+         || reconstructs<CompactIOField<Field<Type>>>(objects, selectedFields);
+    DO_LAGRANGIAN_FIELDS_TYPE(label, )
+    FOR_ALL_FIELD_TYPES(DO_LAGRANGIAN_FIELDS_TYPE)
+    #undef DO_LAGRANGIAN_FIELDS_TYPE
 
     return result;
 }
 
 
-void Foam::LagrangianFieldReconstructor::reconstructPositions() const
+Foam::autoPtr<Foam::passiveParticleCloud>
+Foam::lagrangianFieldReconstructor::completeCloud() const
 {
-    completeMesh_.write();
+    // Construct an empty cloud to add positions too
+    autoPtr<passiveParticleCloud> completeCloudPtr
+    (
+        new passiveParticleCloud
+        (
+            completeMesh_,
+            cloudName_,
+            IDLList<passiveParticle>()
+        )
+    );
+    passiveParticleCloud& completeCloud = completeCloudPtr();
+
+    forAll(procMeshes_, proci)
+    {
+        // Read the processor positions
+        lagrangian::Cloud<passiveParticle> procPositions
+        (
+            procMeshes_[proci],
+            cloudName_,
+            false
+        );
+
+        // Combine the processor's positions into the complete cloud
+        forAllConstIter(lagrangian::Cloud<passiveParticle>, procPositions, iter)
+        {
+            const passiveParticle& p = iter();
+            const label completeCelli =
+                cellProcAddressing_[proci][p.cell()];
+            const label completeFacei =
+                mag(faceProcAddressing_[proci][p.tetFace()]) - 1;
+
+            completeCloud.append
+            (
+                new passiveParticle
+                (
+                    completeMesh_,
+                    p.coordinates(),
+                    completeCelli,
+                    completeFacei,
+                    p.procTetPt
+                    (
+                        procMeshes_[proci],
+                        completeMesh_,
+                        completeCelli,
+                        completeFacei
+                    )
+                )
+            );
+        }
+    }
+
+    return completeCloudPtr;
+}
+
+
+void Foam::lagrangianFieldReconstructor::reconstructPositions() const
+{
+    IOPosition<lagrangian::Cloud<passiveParticle>>(completeCloud()()).write();
 }
 
 

@@ -22,25 +22,22 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::PatchIntersection
+    Foam::patchIntersection
 
 Description
-    Base class for patch intersections. Provides storage and access to the
-    intersection points and faces and their relationship between the source and
-    target patches.
+    Base class for patch intersections. Provides type name and debugging. See
+    templated derivatives for actual functionality.
 
 SourceFiles
-    PatchIntersectionI.H
-    PatchIntersection.C
+    patchIntersection.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef PatchIntersection_H
-#define PatchIntersection_H
+#ifndef patchIntersection_H
+#define patchIntersection_H
 
-#include "patchIntersection.H"
-#include "pointField.H"
-#include "faceList.H"
+#include "DynamicField.H"
+#include "face.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -48,50 +45,185 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                    Class PatchIntersection Declaration
+                    Class patchIntersection Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class SrcPatchType, class TgtPatchType>
-class PatchIntersection
-:
-    public patchIntersection
+class patchIntersection
 {
 protected:
 
+    // Protected static data
+
+        //- Flag to set whether the faces of the intersection are oriented the
+        //  same way as the source patch (true) or the target patch (false).
+        static const bool orientToSource_;
+
+
     // Protected Data
 
-        //- Reference to the source patch
-        const SrcPatchType& srcPatch_;
+        // Points
 
-        //- Reference to the target patch
-        const TgtPatchType& tgtPatch_;
+            //- The intersection points
+            DynamicField<point> points_;
+
+            //- The source points' corresponding intersection points
+            labelList srcPointPoints_;
+
+            //- The target points' corresponding intersection points
+            labelList tgtPointPoints_;
+
+            //- The intersection points' corresponding source points, or -1
+            //  if the point does not correspond to a source point
+            DynamicList<label> pointSrcPoints_;
+
+            //- The intersection points' corresponding target points, or -1
+            //  if the point does not correspond to a target point
+            DynamicList<label> pointTgtPoints_;
+
+            //- The source edges' intersection points. Ordered along the edge.
+            List<DynamicList<label>> srcEdgePoints_;
+
+            //- The target edges' intersection points. Ordered along the edge.
+            List<DynamicList<label>> tgtEdgePoints_;
+
+            //- The intersection points' source edges, or -1 if the point
+            //  is not on a source edge
+            DynamicList<label> pointSrcEdges_;
+
+            //- The intersection points' target edges, or -1 if the point
+            //  is not on a target edge
+            DynamicList<label> pointTgtEdges_;
+
+            // !!! We don't store srcFacePoints and tgtFacePoints. These are
+            // not needed at present. They also don't have any ordering
+            // associated with them, so they don't need to be maintained by the
+            // intersection process. They could be generated on demand as a
+            // post-processing step from from pointSrcFaces and pointTgtFaces.
+
+            //- The intersection points' source faces, or -1 if the point
+            //  did not project into a source face
+            DynamicList<label> pointSrcFaces_;
+
+            //- The intersection points' target faces, or -1 if the point
+            //  did not project into a target face
+            DynamicList<label> pointTgtFaces_;
+
+
+        // Faces
+
+            //- The intersection faces
+            DynamicList<face> faces_;
+
+            //- The source faces' intersection faces
+            List<DynamicList<label>> srcFaceFaces_;
+
+            //- The target faces' intersection faces
+            List<DynamicList<label>> tgtFaceFaces_;
+
+            //- The intersection faces' corresponding source faces, or -1
+            //  if the face does not correspond to source face
+            DynamicList<label> faceSrcFaces_;
+
+            //- The intersection faces' corresponding target faces, or -1
+            //  if the face does not correspond to target face
+            DynamicList<label> faceTgtFaces_;
+
+
+    // Protected Member Functions
+
+        //- Report properties of the intersection process
+        void report(const word& writeSuffix=word::null);
 
 
 public:
 
+    // Runtime type information
+
+        ClassName("patchIntersection");
+
+        virtual word type() const = 0;
+
+
     // Constructors
 
-        //- Construct from a source and a target patch
-        PatchIntersection
+        //- Construct given sizes
+        patchIntersection
         (
-            const SrcPatchType& srcPatch,
-            const TgtPatchType& tgtPatch
+            const label srcNPoints,
+            const label tgtNPoints,
+            const label srcNEdges,
+            const label tgtNEdges,
+            const label srcNFaces,
+            const label tgtNFaces
         );
 
 
     //- Destructor
-    virtual ~PatchIntersection();
+    virtual ~patchIntersection();
 
 
     // Member Functions
 
-        // Access
+        // Points
 
-            //- The source patch
-            inline const SrcPatchType& srcPatch() const;
+            //- The intersection points
+            inline const pointField& points() const;
 
-            //- The target patch
-            inline const TgtPatchType& tgtPatch() const;
+            //- The source points' corresponding intersection points
+            inline const labelList& srcPointPoints() const;
+
+            //- The target points' corresponding intersection points
+            inline const labelList& tgtPointPoints() const;
+
+            //- The intersection points' corresponding source points, or -1
+            //  if the point does not correspond to a source point
+            inline const DynamicList<label>& pointSrcPoints() const;
+
+            //- The intersection points' corresponding target points, or -1
+            //  if the point does not correspond to a target point
+            inline const DynamicList<label>& pointTgtPoints() const;
+
+            //- The source edges' intersection points. Ordered along the edge.
+            inline const List<DynamicList<label>>& srcEdgePoints() const;
+
+            //- The target edges' intersection points. Ordered along the edge.
+            inline const List<DynamicList<label>>& tgtEdgePoints() const;
+
+            //- The intersection points' source edges, or -1 if the point
+            //  is not on a source edge
+            inline const DynamicList<label>& pointSrcEdges() const;
+
+            //- The intersection points' target edges, or -1 if the point
+            //  is not on a target edge
+            inline const DynamicList<label>& pointTgtEdges() const;
+
+            //- The intersection points' source faces, or -1 if the point
+            //  did not project into a source face
+            inline const DynamicList<label>& pointSrcFaces() const;
+
+            //- The intersection points' target faces, or -1 if the point
+            //  did not project into a target face
+            inline const DynamicList<label>& pointTgtFaces() const;
+
+
+        // Faces
+
+            //- The intersection faces
+            inline const faceList& faces() const;
+
+            //- The source faces' intersection faces
+            inline const List<DynamicList<label>>& srcFaceFaces() const;
+
+            //- The target faces' intersection faces
+            inline const List<DynamicList<label>>& tgtFaceFaces() const;
+
+            //- The intersection faces' corresponding source faces, or -1
+            //  if the face does not correspond to source face
+            inline const DynamicList<label>& faceSrcFaces() const;
+
+            //- The intersection faces' corresponding target faces, or -1
+            //  if the face does not correspond to target face
+            inline const DynamicList<label>& faceTgtFaces() const;
 };
 
 
@@ -101,11 +233,7 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "PatchIntersectionI.H"
-
-#ifdef NoRepository
-    #include "PatchIntersection.C"
-#endif
+#include "patchIntersectionI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

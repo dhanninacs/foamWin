@@ -23,119 +23,200 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "FluidLagrangianThermo.H"
+#include "fluidLagrangianThermo.H"
+#include "calculatedLagrangianPatchFields.H"
+#include "pressureLagrangianScalarFieldSource.H"
+#include "compressibilityLagrangianScalarFieldSource.H"
+#include "dynamicViscosityLagrangianScalarFieldSource.H"
 
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::FluidLagrangianThermo<BaseThermo>::~FluidLagrangianThermo()
+namespace Foam
+{
+    defineTypeNameAndDebug(fluidLagrangianThermo, 0);
+    defineRunTimeSelectionTable(fluidLagrangianThermo, LagrangianMesh);
+}
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::fluidLagrangianThermo::implementation::implementation
+(
+    const dictionary& dict,
+    const LagrangianMesh& mesh,
+    const word& phaseName,
+    const LagrangianScalarDynamicField& T
+)
+:
+    p_
+    (
+        IOobject
+        (
+            IOobject::groupName("p", phaseName),
+            mesh.time().name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("NaN", dimPressure, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<pressureLagrangianScalarFieldSource>(T),
+        T.sources().errorLocation()
+    ),
+    pSourcePtr_
+    (
+        LagrangianScalarFieldSource::New
+        (
+            p_,
+            dict.subDict("pressure")
+        )
+    ),
+    psi_
+    (
+        IOobject
+        (
+            IOobject::groupName("psi", phaseName),
+            mesh.time().name(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("NaN", dimDensity/dimPressure, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<compressibilityLagrangianScalarFieldSource>(T),
+        T.sources().errorLocation()
+    ),
+    mu_
+    (
+        IOobject
+        (
+            IOobject::groupName("mu", phaseName),
+            mesh.time().name(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("NaN", dimDynamicViscosity, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<dynamicViscosityLagrangianScalarFieldSource>(T),
+        T.sources().errorLocation()
+    )
 {}
 
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-void Foam::FluidLagrangianThermo<BaseThermo>::correct
+Foam::autoPtr<Foam::fluidLagrangianThermo>
+Foam::fluidLagrangianThermo::New
 (
-    const LagrangianSubMesh& subMesh
+    const LagrangianMesh& mesh,
+    const word& phaseName
 )
 {
-    if (BaseThermo::debug) InfoInFunction << endl;
-
-    const SubField<scalar> e = subMesh.sub(this->e_.primitiveField());
-
-    SubField<scalar> p = subMesh.sub(this->p_.primitiveFieldRef());
-    SubField<scalar> T = subMesh.sub(this->T_.primitiveFieldRef());
-    SubField<scalar> psi = subMesh.sub(this->psi_.primitiveFieldRef());
-    SubField<scalar> rho = subMesh.sub(this->rho_.primitiveFieldRef());
-    SubField<scalar> Cv = subMesh.sub(this->Cv_.primitiveFieldRef());
-    SubField<scalar> kappa = subMesh.sub(this->kappa_.primitiveFieldRef());
-    SubField<scalar> mu = subMesh.sub(this->mu_.primitiveFieldRef());
-
-    auto Yslicer = this->Yslicer();
-
-    forAll(T, subi)
-    {
-        const label i = subMesh.start() + subi;
-
-        auto composition = this->elementComposition(Yslicer, i);
-
-        const typename BaseThermo::mixtureType::thermoMixtureType&
-            thermoMixture = this->thermoMixture(composition);
-
-        const typename BaseThermo::mixtureType::transportMixtureType&
-            transportMixture =
-            this->transportMixture(composition, thermoMixture);
-
-        T[subi] = thermoMixture.Tes(e[subi], p[subi], T[subi]);
-
-        psi[subi] = thermoMixture.psi(p[subi], T[subi]);
-        rho[subi] = thermoMixture.rho(p[subi], T[subi]);
-        Cv[subi] = thermoMixture.Cv(p[subi], T[subi]);
-
-        kappa[subi] = transportMixture.kappa(p[subi], T[subi]);
-        mu[subi] = transportMixture.mu(p[subi], T[subi]);
-    }
-
-    if (BaseThermo::debug) Info<< "    Finished" << endl;
+    return basicLagrangianThermo::New<fluidLagrangianThermo>(mesh, phaseName);
 }
+
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::fluidLagrangianThermo::~fluidLagrangianThermo()
+{}
+
+
+Foam::fluidLagrangianThermo::implementation::~implementation()
+{}
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::FluidLagrangianThermo<BaseThermo>::psi
-(
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
-) const
+void Foam::fluidLagrangianThermo::implementation::initialise()
 {
-    return
-        this->LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "psi",
-            dimDensity/dimPressure,
-            &BaseThermo::mixtureType::thermoMixture,
-            &BaseThermo::mixtureType::thermoMixtureType::psi,
-            this->p(injection, T.mesh())(),
-            T
-        );
+    // Initialise the pressure if it was not read in
+    if (!p_.headerOk()) correctPressure(mesh().subAll());
+
+    correct(mesh().subAll());
 }
 
 
-template<class BaseThermo>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::FluidLagrangianThermo<BaseThermo>::mu
+void Foam::fluidLagrangianThermo::implementation::correctPressure
 (
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
+    const LagrangianSubMesh& subMesh
+)
+{
+    if (debug) InfoInFunction << endl;
+
+    SubField<scalar> p = subMesh.sub(this->p_.primitiveFieldRef());
+
+    // Use the source model to update the pressure on this sub-mesh
+    p = pSourcePtr_->value(subMesh)().primitiveField();
+
+    if (debug) Info<< "    Finished" << endl;
+}
+
+
+const Foam::LagrangianScalarDynamicField&
+Foam::fluidLagrangianThermo::implementation::p() const
+{
+    return p_;
+}
+
+
+Foam::LagrangianScalarDynamicField&
+Foam::fluidLagrangianThermo::implementation::p()
+{
+    return p_;
+}
+
+
+Foam::tmp<Foam::LagrangianSubScalarSubField>
+Foam::fluidLagrangianThermo::implementation::p
+(
+    const LagrangianSubMesh& subMesh
 ) const
 {
-    typedef decltype(this->Yslicer(injection, T.mesh())) YslicerType;
+    return subMesh.sub(p_);
+}
 
-    typedef
-        decltype(this->injectionElementComposition(YslicerType(), -1))
-        compositionType;
 
-    const typename BaseThermo::mixtureType::transportMixtureType&
-        (BaseThermo::mixtureType::*mixture)(const compositionType&) const =
-        &BaseThermo::mixtureType::transportMixture;
+Foam::tmp<Foam::LagrangianSubScalarField>
+Foam::fluidLagrangianThermo::implementation::p
+(
+    const LagrangianInjection& injection,
+    const LagrangianSubMesh& subMesh
+) const
+{
+    return pSourcePtr_->value(injection, subMesh);
+}
 
-    return
-        this->LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "mu",
-            dimDynamicViscosity,
-            mixture,
-            &BaseThermo::mixtureType::transportMixtureType::mu,
-            this->p(injection, T.mesh())(),
-            T
-        );
+
+const Foam::LagrangianScalarDynamicField&
+Foam::fluidLagrangianThermo::implementation::psi() const
+{
+    return psi_;
+}
+
+
+const Foam::LagrangianScalarDynamicField&
+Foam::fluidLagrangianThermo::implementation::mu() const
+{
+    return mu_;
 }
 
 

@@ -23,56 +23,66 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "DiagonalPreconditioner.H"
+#include "diagonalPreconditioner.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(diagonalPreconditioner, 0);
+
+    lduMatrix::preconditioner::
+        addsymMatrixConstructorToTable<diagonalPreconditioner>
+        adddiagonalPreconditionerSymMatrixConstructorToTable_;
+
+    lduMatrix::preconditioner::
+        addasymMatrixConstructorToTable<diagonalPreconditioner>
+        adddiagonalPreconditionerAsymMatrixConstructorToTable_;
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class Type, class DType, class LUType>
-Foam::DiagonalPreconditioner<Type, DType, LUType>::DiagonalPreconditioner
+Foam::diagonalPreconditioner::diagonalPreconditioner
 (
-    const typename LduMatrix<Type, DType, LUType>::solver& sol,
+    const lduMatrix::solver& sol,
     const dictionary&
 )
 :
-    LduMatrix<Type, DType, LUType>::preconditioner(sol),
+    lduMatrix::preconditioner(sol),
     rD(sol.matrix().diag().size())
 {
-    DType* __restrict__ rDPtr = rD.begin();
-    const DType* __restrict__ DPtr = this->solver_.matrix().diag().begin();
+    scalar* __restrict__ rDPtr = rD.begin();
+    const scalar* __restrict__ DPtr = solver_.matrix().diag().begin();
 
     label nCells = rD.size();
 
-    // Generate inverse (reciprocal for scalar) diagonal
+    // Generate reciprocal diagonal
     for (label cell=0; cell<nCells; cell++)
     {
-        rDPtr[cell] = inv(DPtr[cell]);
+        rDPtr[cell] = 1.0/DPtr[cell];
     }
 }
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class Type, class DType, class LUType>
-void Foam::DiagonalPreconditioner<Type, DType, LUType>::read(const dictionary&)
-{}
-
-
-template<class Type, class DType, class LUType>
-void Foam::DiagonalPreconditioner<Type, DType, LUType>::precondition
+void Foam::diagonalPreconditioner::precondition
 (
-    Field<Type>& wA,
-    const Field<Type>& rA
+    scalarField& wA,
+    const scalarField& rA,
+    const direction
 ) const
 {
-    Type* __restrict__ wAPtr = wA.begin();
-    const Type* __restrict__ rAPtr = rA.begin();
-    const DType* __restrict__ rDPtr = rD.begin();
+    scalar* __restrict__ wAPtr = wA.begin();
+    const scalar* __restrict__ rAPtr = rA.begin();
+    const scalar* __restrict__ rDPtr = rD.begin();
 
     label nCells = wA.size();
 
     for (label cell=0; cell<nCells; cell++)
     {
-        wAPtr[cell] = dot(rDPtr[cell], rAPtr[cell]);
+        wAPtr[cell] = rDPtr[cell]*rAPtr[cell];
     }
 }
 

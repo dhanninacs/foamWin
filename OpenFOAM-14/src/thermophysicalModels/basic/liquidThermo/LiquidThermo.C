@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,44 +23,33 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "LiquidThermo.H"
+#include "liquidThermo.H"
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::LiquidThermo<BaseThermo>::LiquidThermo
+namespace Foam
+{
+    defineTypeNameAndDebug(liquidThermo, 0);
+    defineRunTimeSelectionTable(liquidThermo, fvMesh);
+}
+
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::liquidThermo> Foam::liquidThermo::New
 (
     const fvMesh& mesh,
     const word& phaseName
 )
-:
-    BaseThermo(mesh, phaseName)
-{}
+{
+    return basicThermo::New<liquidThermo>(mesh, phaseName);
+}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::LiquidThermo<BaseThermo>::~LiquidThermo()
+Foam::liquidThermo::~liquidThermo()
 {}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class BaseThermo>
-Foam::tmp<Foam::volScalarField>
-Foam::LiquidThermo<BaseThermo>::sigma() const
-{
-    return this->volScalarFieldProperty
-    (
-        "sigma",
-        dimForce/dimLength,
-        &BaseThermo::mixtureType::thermoMixture,
-        &BaseThermo::mixtureType::thermoMixtureType::sigma,
-        this->p_,
-        this->T_
-    );
-}
 
 
 // ************************************************************************* //

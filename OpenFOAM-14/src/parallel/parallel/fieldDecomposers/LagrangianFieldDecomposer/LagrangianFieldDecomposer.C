@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,191 +23,169 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "LagrangianFieldDecomposer.H"
-#include "remote.H"
+#include "lagrangianFieldDecomposer.H"
+#include "passiveParticleCloud.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::LagrangianFieldDecomposer::LagrangianFieldDecomposer
+Foam::lagrangianFieldDecomposer::lagrangianFieldDecomposer
 (
-    const fvMesh& completeFvMesh,
-    const PtrList<fvMesh>& procFvMeshes,
+    const fvMesh& completeMesh,
+    const PtrList<fvMesh>& procMeshes,
     const labelListList& faceProcAddressing,
     const labelListList& cellProcAddressing,
-    const word& LagrangianName
+    const word& cloudName
 )
 :
-    completeMesh_(completeFvMesh, LagrangianName),
-    procMeshes_(procFvMeshes.size()),
-    particleProcAddressing_(procFvMeshes.size())
+    completeMesh_(completeMesh),
+    procMeshes_(procMeshes),
+    particleProcAddressing_(procMeshes_.size()),
+    procClouds_(procMeshes.size()),
+    cloudName_(cloudName)
 {
-    // Construct empty processor meshes
-    forAll(procMeshes_, proci)
-    {
-        procMeshes_.set
-        (
-            proci,
-            new LagrangianMesh
-            (
-                procFvMeshes[proci],
-                LagrangianName,
-                IOobject::NO_READ
-            )
-        );
-    }
-
     // Create reverse cell addressing
-    List<remote> completeCellProcCell(completeMesh_.poly().nCells());
+    List<remote> cellProcCell(completeMesh_.nCells());
     forAll(cellProcAddressing, proci)
     {
         forAll(cellProcAddressing[proci], procCelli)
         {
-            completeCellProcCell[cellProcAddressing[proci][procCelli]] =
+            cellProcCell[cellProcAddressing[proci][procCelli]] =
                 remote(proci, procCelli);
         }
     }
 
     // Create reverse face addressing
-    List<remote> completeFaceOwnerProcFace(completeMesh_.poly().nFaces());
-    List<remote> completeFaceNeighbourProcFace(completeMesh_.poly().nFaces());
+    List<remote> faceOwnerProcFace(completeMesh_.nFaces());
+    List<remote> faceNeighbourProcFace(completeMesh_.nFaces());
     forAll(faceProcAddressing, proci)
     {
         forAll(faceProcAddressing[proci], procFacei)
         {
             const bool owner = faceProcAddressing[proci][procFacei] > 0;
-            const label completeFacei =
-                mag(faceProcAddressing[proci][procFacei]) - 1;
+            const label facei = mag(faceProcAddressing[proci][procFacei]) - 1;
 
-            (
-                owner
-              ? completeFaceOwnerProcFace
-              : completeFaceNeighbourProcFace
-            )[completeFacei] = remote(proci, procFacei);
+            (owner ? faceOwnerProcFace : faceNeighbourProcFace)[facei] =
+                remote(proci, procFacei);
         }
     }
 
-    // Count the number of particles on each processor
-    labelList procMeshSizes(procMeshes_.size(), 0);
-    forAll(completeMesh_, i)
-    {
-        const label proci =
-            completeCellProcCell[completeMesh_.celli()[i]].proci;
+    // Read the complete positions
+    const passiveParticleCloud completeCloud
+    (
+        completeMesh_,
+        cloudName_,
+        false
+    );
 
-        procMeshSizes[proci] ++;
+    // Construct empty clouds for processor positions
+    forAll(procMeshes_, proci)
+    {
+        procClouds_.set
+        (
+            proci,
+            new passiveParticleCloud
+            (
+                procMeshes_[proci],
+                cloudName_,
+                IDLList<passiveParticle>()
+            )
+        );
+    }
+
+    // Count the number of particles on each processor
+    labelList procNParticles(procMeshes_.size(), 0);
+    forAllConstIter(passiveParticleCloud, completeCloud, iter)
+    {
+        const passiveParticle& p = iter();
+        const label proci = cellProcCell[p.cell()].proci;
+
+        procNParticles[proci] ++;
     }
 
     // Resize the addressing
     forAll(procMeshes_, proci)
     {
-        particleProcAddressing_[proci].resize(procMeshSizes[proci], -1);
+        particleProcAddressing_[proci].resize(procNParticles[proci], -1);
     }
 
-    // Allocate processor geometry and topology
-    PtrList<barycentricField> procCoordinates(procMeshes_.size());
-    PtrList<labelField> procCellIndices(procMeshes_.size());
-    PtrList<labelField> procFaceIndices(procMeshes_.size());
-    PtrList<labelField> procFaceTriIndices(procMeshes_.size());
-    forAll(procMeshes_, proci)
+    // Distribute positions to the processor meshes
+    label completeParticlei = 0;
+    labelList procParticlei(procMeshes_.size(), 0);
+    forAllConstIter(passiveParticleCloud, completeCloud, iter)
     {
-        procCoordinates.set(proci, new barycentricField(procMeshSizes[proci]));
-        procCellIndices.set(proci, new labelField(procMeshSizes[proci]));
-        procFaceIndices.set(proci, new labelField(procMeshSizes[proci]));
-        procFaceTriIndices.set(proci, new labelField(procMeshSizes[proci]));
-    }
-
-    // Distribute the elements to the processor meshes, and simultaneously
-    // build addressing for distributing associated fields
-    const faceList& completeFaces = completeMesh_.poly().faces();
-    labelList procIs(procMeshes_.size(), 0);
-    forAll(completeMesh_, i)
-    {
-        const label completeCelli = completeMesh_.celli()[i];
-        const label completeFacei = completeMesh_.facei()[i];
-
-        const label proci = completeCellProcCell[completeCelli].proci;
-        const label procCelli = completeCellProcCell[completeCelli].elementi;
+        const passiveParticle& p = iter();
+        const label proci = cellProcCell[p.cell()].proci;
+        const label procCelli = cellProcCell[p.cell()].elementi;
         const label procFacei =
-            completeFaceOwnerProcFace[completeFacei].proci == proci
-          ? completeFaceOwnerProcFace[completeFacei].elementi
-          : completeFaceNeighbourProcFace[completeFacei].elementi;
+            faceOwnerProcFace[p.tetFace()].proci == proci
+          ? faceOwnerProcFace[p.tetFace()].elementi
+          : faceNeighbourProcFace[p.tetFace()].elementi;
 
-        particleProcAddressing_[proci][procIs[proci]] = i;
+        particleProcAddressing_[proci][procParticlei[proci]] =
+            completeParticlei;
 
-        procCoordinates[proci][procIs[proci]] = completeMesh_.coordinates()[i];
-        procCellIndices[proci][procIs[proci]] = procCelli;
-        procFaceIndices[proci][procIs[proci]] = procFacei;
-        procFaceTriIndices[proci][procIs[proci]] = completeMesh_.faceTrii()[i];
-
-        // If the owner has changed then the face will be numbered around in
-        // the opposite direction. Change the face triangle index accordingly.
-        if (faceProcAddressing[proci][procFacei] < 0)
-        {
-            const label completeFaceSize = completeFaces[completeFacei].size();
-
-            procFaceTriIndices[proci][procIs[proci]] =
-                completeFaceSize - 1 - procFaceTriIndices[proci][procIs[proci]];
-        }
-
-        procIs[proci] ++;
-    }
-
-    // Inject into the processor meshes
-    forAll(procMeshes_, proci)
-    {
-        procMeshes_[proci].inject
+        procClouds_[proci].append
         (
-            procCoordinates[proci],
-            procCellIndices[proci],
-            procFaceIndices[proci],
-            procFaceTriIndices[proci]
+            new passiveParticle
+            (
+                procMeshes_[proci],
+                p.coordinates(),
+                procCelli,
+                procFacei,
+                p.procTetPt
+                (
+                    completeMesh_,
+                    procMeshes_[proci],
+                    procCelli,
+                    procFacei
+                )
+            )
         );
+
+        completeParticlei ++;
+        procParticlei[proci] ++;
     }
 }
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::LagrangianFieldDecomposer::~LagrangianFieldDecomposer()
+Foam::lagrangianFieldDecomposer::~lagrangianFieldDecomposer()
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::PtrList<Foam::LagrangianMesh>&
-Foam::LagrangianFieldDecomposer::procMeshes() const
-{
-    return procMeshes_;
-}
-
-
-void Foam::LagrangianFieldDecomposer::decomposePositions() const
-{
-    forAll(procMeshes_, proci)
-    {
-        procMeshes_[proci].write();
-    }
-}
-
-
-bool Foam::LagrangianFieldDecomposer::decomposes
-(
-    const IOobjectList& objects
-)
+bool Foam::lagrangianFieldDecomposer::decomposes(const IOobjectList& objects)
 {
     bool result = false;
 
-    #define DECOMPOSES_LAGRANGIAN_FIELDS_TYPE(Type, nullArg)                   \
-        result =                                                               \
-            result                                                             \
-         || decomposes<LagrangianField<Type>>(objects)                         \
-         || decomposes<LagrangianDynamicField<Type>>(objects)                  \
-         || decomposes<LagrangianInternalField<Type>>(objects)                 \
-         || decomposes<LagrangianInternalDynamicField<Type>>(objects);
-    DECOMPOSES_LAGRANGIAN_FIELDS_TYPE(label, )
-    FOR_ALL_FIELD_TYPES(DECOMPOSES_LAGRANGIAN_FIELDS_TYPE)
-    #undef DECOMPOSES_LAGRANGIAN_FIELDS_TYPE
+    #define DO_LAGRANGIAN_FIELDS_TYPE(Type, nullArg)                           \
+        result = result                                                        \
+         || !objects.lookupClass(IOField<Type>::typeName).empty()              \
+         || !objects.lookupClass(IOField<Field<Type>>::typeName).empty()       \
+         || !objects.lookupClass(CompactIOField<Field<Type>>::typeName).empty();
+    DO_LAGRANGIAN_FIELDS_TYPE(label, )
+    FOR_ALL_FIELD_TYPES(DO_LAGRANGIAN_FIELDS_TYPE)
+    #undef DO_LAGRANGIAN_FIELDS_TYPE
 
     return result;
+}
+
+
+const Foam::PtrList<Foam::passiveParticleCloud>&
+Foam::lagrangianFieldDecomposer::procClouds() const
+{
+    return procClouds_;
+}
+
+
+void Foam::lagrangianFieldDecomposer::decomposePositions() const
+{
+    forAll(procClouds_, proci)
+    {
+        IOPosition<passiveParticleCloud>(procClouds_[proci]).write();
+    }
 }
 
 

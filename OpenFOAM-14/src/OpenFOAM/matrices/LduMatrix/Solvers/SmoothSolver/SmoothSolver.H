@@ -22,21 +22,23 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::SmoothSolver
+    Foam::smoothSolver
 
 Description
     Iterative solver for symmetric and asymmetric matrices which uses a
     run-time selected smoother e.g. GaussSeidel to converge the solution to
-    the required tolerance.  To improve efficiency, the residual is evaluated
-    after every nSweeps smoothing iterations.
+    the required tolerance.
+
+    To improve efficiency, the residual is evaluated after every nSweeps
+    smoothing iterations.
 
 SourceFiles
-    SmoothSolver.C
+    smoothSolver.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef SmoothSolver_H
-#define SmoothSolver_H
+#ifndef smoothSolver_H
+#define smoothSolver_H
 
 #include "lduMatrix.H"
 
@@ -46,15 +48,13 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                        Class SmoothSolver Declaration
+                        Class smoothSolver Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class Type, class DType, class LUType>
-class SmoothSolver
+class smoothSolver
 :
-    public LduMatrix<Type, DType, LUType>::solver
+    public lduMatrix::solver
 {
-
 protected:
 
     // Protected data
@@ -65,40 +65,45 @@ protected:
         //- Read the control parameters from the controlDict_
         virtual void readControls();
 
-
 public:
 
     //- Runtime type information
-    TypeName("SmoothSolver");
+    TypeName("smoothSolver");
 
 
     // Constructors
 
-        //- Construct from matrix components and solver data dictionary
-        SmoothSolver
+        //- Construct from matrix components and solver controls
+        smoothSolver
         (
             const word& fieldName,
-            const LduMatrix<Type, DType, LUType>& matrix,
-            const dictionary& solverDict
+            const lduMatrix& matrix,
+            const FieldField<Field, scalar>& interfaceBouCoeffs,
+            const FieldField<Field, scalar>& interfaceIntCoeffs,
+            const lduInterfaceFieldPtrsList& interfaces,
+            const dictionary& solverControls
         );
 
+
+    //- Destructor
+    virtual ~smoothSolver()
+    {}
 
     // Member Functions
 
         //- Solve the matrix with this solver
-        virtual SolverPerformance<Type> solve(Field<Type>& psi) const;
+        virtual solverPerformance solve
+        (
+            scalarField& psi,
+            const scalarField& source,
+            const direction cmpt=0
+        ) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "SmoothSolver.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

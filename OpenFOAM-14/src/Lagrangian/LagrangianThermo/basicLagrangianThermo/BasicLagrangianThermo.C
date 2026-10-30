@@ -23,406 +23,219 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "BasicLagrangianThermo.H"
-#include "energyLagrangianScalarFieldSource.H"
+#include "basicLagrangianThermo.H"
+#include "calculatedLagrangianPatchFields.H"
+#include "densityLagrangianScalarFieldSource.H"
+#include "specificHeatCapacityLagrangianScalarFieldSource.H"
+#include "thermalConductivityLagrangianScalarFieldSource.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(basicLagrangianThermo, 0);
+    defineRunTimeSelectionTable(basicLagrangianThermo, LagrangianMesh);
+}
+
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
-template<class MixtureType, class BasicThermoType>
-template<class Mixture, class Method, class ... Args>
-Foam::tmp<Foam::LagrangianInternalScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::
-LagrangianInternalScalarFieldProperty
-(
-    const word& psiName,
-    const dimensionSet& psiDim,
-    Mixture mixture,
-    Method psiMethod,
-    const Args& ... args
-) const
+Foam::wordList Foam::basicLagrangianThermo::eBoundaryTypes() const
 {
-    tmp<LagrangianInternalScalarField> tPsi
-    (
-        LagrangianInternalScalarField::New
-        (
-            IOobject::groupName(psiName, this->group()),
-            this->mesh(),
-            psiDim
-        )
-    );
-    LagrangianInternalScalarField& psi = tPsi.ref();
+    const LagrangianScalarDynamicField::Boundary& Tbf = T().boundaryField();
 
-    auto Yslicer = this->Yslicer();
+    wordList eBt = Tbf.types();
 
-    forAll(psi, i)
-    {
-        auto composition = this->elementComposition(Yslicer, i);
+    // !!! There are no boundary conditions for temperature in Lagrangian other
+    // than calculated and constraint types. So the types are the same for the
+    // temperature and energy fields. If in future boundary conditions are
+    // added that affect the temperature (e.g., some sort of wall-heat transfer
+    // model) then corresponding energy conditions will also be needed and this
+    // function will need to translate between the two.
 
-        psi[i] = ((this->*mixture)(composition).*psiMethod)(args[i] ...);
-    }
-
-    return tPsi;
+    return eBt;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-template<class Mixture, class Method, class ... Args>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::
-LagrangianSubScalarFieldProperty
-(
-    const LagrangianSubMesh& subMesh,
-    const word& psiName,
-    const dimensionSet& psiDim,
-    Mixture mixture,
-    Method psiMethod,
-    const Args& ... args
-) const
+Foam::wordList Foam::basicLagrangianThermo::eBoundaryBaseTypes() const
 {
-    tmp<LagrangianSubScalarField> tPsi
-    (
-        LagrangianSubScalarField::New
-        (
-            IOobject::groupName(subMesh.sub(psiName), this->group()),
-            subMesh,
-            psiDim
-        )
-    );
-    LagrangianSubScalarField& psi = tPsi.ref();
+    const LagrangianScalarDynamicField::Boundary& Tbf = T().boundaryField();
 
-    auto Yslicer = this->Yslicer();
+    wordList eBbt(Tbf.size(), word::null);
 
-    forAll(psi, subi)
-    {
-        const label i = subMesh.start() + subi;
+    // !!! There is no "overrides constraint" mechanism in Lagrangian at
+    // present. So there is currently nothing to be done here.
 
-        auto composition = this->elementComposition(Yslicer, i);
-
-        psi[subi] = ((this->*mixture)(composition).*psiMethod)(args[i] ...);
-    }
-
-    return tPsi;
-}
-
-
-template<class MixtureType, class BasicThermoType>
-template<class Mixture, class Method, class ... Args>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::
-LagrangianInjectionProperty
-(
-    const LagrangianInjection& injection,
-    const LagrangianSubMesh& subMesh,
-    const word& psiName,
-    const dimensionSet& psiDim,
-    Mixture mixture,
-    Method psiMethod,
-    const Args& ... args
-) const
-{
-    tmp<LagrangianSubScalarField> tPsi
-    (
-        LagrangianSubScalarField::New
-        (
-            IOobject::groupName(subMesh.sub(psiName), this->group()),
-            subMesh,
-            psiDim
-        )
-    );
-    LagrangianSubScalarField& psi = tPsi.ref();
-
-    auto Yslicer = this->Yslicer(injection, subMesh);
-
-    forAll(psi, subi)
-    {
-        auto composition = this->injectionElementComposition(Yslicer, subi);
-
-        psi[subi] = ((this->*mixture)(composition).*psiMethod)(args[subi] ...);
-    }
-
-    return tPsi;
+    return eBbt;
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class MixtureType, class BasicThermoType>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::BasicLagrangianThermo
+Foam::basicLagrangianThermo::implementation::implementation
 (
+    const dictionary& dict,
     const LagrangianMesh& mesh,
     const word& phaseName
 )
 :
-    physicalProperties(mesh, phaseName),
-    MixtureType(properties()),
-    BasicThermoType
-    (
-        properties(),
-        static_cast<const MixtureType&>(*this),
-        mesh,
-        phaseName
-    ),
-    e_
+    mesh_(mesh),
+    phaseName_(phaseName),
+    T_
     (
         IOobject
         (
-            IOobject::groupName
-            (
-                MixtureType::thermoType::heName(),
-                phaseName
-            ),
+            IOobject::groupName("T", phaseName),
             mesh.time().name(),
             mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
         ),
-        LagrangianInternalScalarFieldProperty
+        mesh
+    ),
+    rho_
+    (
+        IOobject
         (
-            "e",
-            dimEnergy/dimMass,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::es,
-            this->p_,
-            this->T_
-        )(),
-        this->eBoundaryTypes(),
-        this->eBoundaryBaseTypes(),
-        this->template sourcesTypes<energyLagrangianScalarFieldSource>
-        (
-            this->T_
+            IOobject::groupName("rho", phaseName),
+            mesh.time().name(),
+            mesh
         ),
-        this->T_.sources().errorLocation()
+        mesh,
+        dimensionedScalar("NaN", dimDensity, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<densityLagrangianScalarFieldSource>(T_),
+        T_.sources().errorLocation()
+    ),
+    Cv_
+    (
+        IOobject
+        (
+            IOobject::groupName("Cv", phaseName),
+            mesh.time().name(),
+            mesh
+        ),
+        mesh,
+        dimensionedScalar("NaN", dimSpecificHeatCapacity, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<specificHeatCapacityLagrangianScalarFieldSource>(T_),
+        T_.sources().errorLocation()
+    ),
+    kappa_
+    (
+        IOobject
+        (
+            IOobject::groupName("kappa", phaseName),
+            mesh.time().name(),
+            mesh
+        ),
+        mesh,
+        dimensionedScalar("NaN", dimThermalConductivity, NaN),
+        wordList
+        (
+            mesh.boundary().size(),
+            calculatedLagrangianPatchScalarField::typeName
+        ),
+        wordList::null(),
+        sourcesTypes<thermalConductivityLagrangianScalarFieldSource>(T_),
+        T_.sources().errorLocation()
     )
 {}
 
 
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::basicLagrangianThermo>
+Foam::basicLagrangianThermo::New
+(
+    const LagrangianMesh& mesh,
+    const word& phaseName
+)
+{
+    return New<basicLagrangianThermo>(mesh, phaseName);
+}
+
+
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-template<class MixtureType, class BasicThermoType>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::
-~BasicLagrangianThermo()
+Foam::basicLagrangianThermo::~basicLagrangianThermo()
+{}
+
+
+Foam::basicLagrangianThermo::implementation::~implementation()
 {}
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-template<class MixtureType, class BasicThermoType>
-const Foam::IOdictionary&
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::properties() const
+const Foam::LagrangianMesh&
+Foam::basicLagrangianThermo::implementation::mesh() const
 {
-    return *this;
+    return mesh_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::IOdictionary&
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::properties()
+const Foam::word&
+Foam::basicLagrangianThermo::implementation::phaseName() const
 {
-    return *this;
+    return phaseName_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::word
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::thermoName() const
-{
-    return MixtureType::thermoType::typeName();
-}
-
-
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::W
-(
-    const LagrangianSubMesh& subMesh
-) const
-{
-    return
-        LagrangianSubScalarFieldProperty
-        (
-            subMesh,
-            "W",
-            dimMass/dimMoles,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::W
-        );
-}
-
-
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::rho
-(
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
-) const
-{
-    return
-        LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "rho",
-            dimDensity,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::rho,
-            this->p(injection, T.mesh())(),
-            T
-        );
-}
-
-
-template<class MixtureType, class BasicThermoType>
 const Foam::LagrangianScalarDynamicField&
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::e() const
+Foam::basicLagrangianThermo::implementation::T() const
 {
-    return e_;
+    return T_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
 Foam::LagrangianScalarDynamicField&
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::e()
+Foam::basicLagrangianThermo::implementation::T()
 {
-    return e_;
+    return T_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::e
-(
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
-) const
+const Foam::LagrangianScalarDynamicField&
+Foam::basicLagrangianThermo::implementation::rho() const
 {
-    return
-        LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "e",
-            dimEnergy/dimMass,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::es,
-            this->p(injection, T.mesh())(),
-            T
-        );
+    return rho_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::Cv
-(
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
-) const
+Foam::LagrangianScalarDynamicField&
+Foam::basicLagrangianThermo::implementation::rho()
 {
-    return
-        LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "Cv",
-            dimSpecificHeatCapacity,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::Cv,
-            this->p(injection, T.mesh())(),
-            T
-        );
+    return rho_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::Cp
-(
-    const LagrangianSubMesh& subMesh
-) const
+const Foam::LagrangianScalarDynamicField&
+Foam::basicLagrangianThermo::implementation::Cv() const
 {
-    return
-        LagrangianSubScalarFieldProperty
-        (
-            subMesh,
-            "Cp",
-            dimSpecificHeatCapacity,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::Cp,
-            this->p(subMesh)(),
-            subMesh.sub(this->T_)()
-        );
+    return Cv_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::alphav
-(
-    const LagrangianSubMesh& subMesh
-) const
+const Foam::LagrangianScalarDynamicField&
+Foam::basicLagrangianThermo::implementation::kappa() const
 {
-    return
-        LagrangianSubScalarFieldProperty
-        (
-            subMesh,
-            "alphav",
-            dimless/dimTemperature,
-            &MixtureType::thermoMixture,
-            &MixtureType::thermoMixtureType::alphav,
-            this->p(subMesh)(),
-            subMesh.sub(this->T_)()
-        );
+    return kappa_;
 }
 
 
-template<class MixtureType, class BasicThermoType>
-Foam::tmp<Foam::LagrangianSubScalarField>
-Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::kappa
-(
-    const LagrangianSubScalarField& T,
-    const LagrangianInjection& injection
-) const
-{
-    typedef decltype(this->Yslicer(injection, T.mesh())) YslicerType;
-
-    typedef
-        decltype(this->injectionElementComposition(YslicerType(), -1))
-        compositionType;
-
-    const typename MixtureType::transportMixtureType&
-        (MixtureType::*mixture)(const compositionType&) const =
-        &MixtureType::transportMixture;
-
-    return
-        LagrangianInjectionProperty
-        (
-            injection,
-            T.mesh(),
-            "kappa",
-            dimThermalConductivity,
-            mixture,
-            &MixtureType::transportMixtureType::kappa,
-            this->p(injection, T.mesh())(),
-            T
-        );
-}
-
-
-template<class MixtureType, class BasicThermoType>
-bool Foam::BasicLagrangianThermo<MixtureType, BasicThermoType>::read()
-{
-    if (physicalProperties::read())
-    {
-        MixtureType::read(*this);
-        BasicThermoType::read(*this);
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
+void Foam::basicLagrangianThermo::implementation::read(const dictionary&)
+{}
 
 
 // ************************************************************************* //

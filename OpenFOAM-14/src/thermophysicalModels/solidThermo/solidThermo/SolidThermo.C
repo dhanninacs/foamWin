@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,224 +23,62 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "SolidThermo.H"
+#include "solidThermo.H"
+#include "fvMesh.H"
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-void Foam::SolidThermo<BaseThermo>::calculate()
+namespace Foam
 {
-    const bool isotropic = this->isotropic();
-
-    const scalarField& hCells = this->he_;
-    const auto& pCells = this->p_;
-
-    scalarField& TCells = this->T_.primitiveFieldRef();
-    scalarField& CpCells = this->Cp_.primitiveFieldRef();
-    scalarField& CvCells = this->Cv_.primitiveFieldRef();
-    scalarField& rhoCells = this->rho_.primitiveFieldRef();
-    scalarField& kappaCells = this->kappa_.primitiveFieldRef();
-    vectorField& KappaCells = this->Kappa_.primitiveFieldRef();
-
-    auto Yslicer = this->Yslicer();
-
-    forAll(TCells, celli)
-    {
-        auto composition = this->cellComposition(Yslicer, celli);
-
-        const typename BaseThermo::mixtureType::thermoMixtureType&
-            thermoMixture = this->thermoMixture(composition);
-
-        const typename BaseThermo::mixtureType::transportMixtureType&
-            transportMixture =
-            this->transportMixture(composition, thermoMixture);
-
-        TCells[celli] = thermoMixture.The
-        (
-            hCells[celli],
-            pCells[celli],
-            TCells[celli]
-        );
-
-        CpCells[celli] = thermoMixture.Cp(pCells[celli], TCells[celli]);
-        CvCells[celli] = thermoMixture.Cv(pCells[celli], TCells[celli]);
-        rhoCells[celli] = thermoMixture.rho(pCells[celli], TCells[celli]);
-
-        if (isotropic)
-        {
-            kappaCells[celli] =
-                transportMixture.kappa(pCells[celli], TCells[celli]);
-        }
-        else
-        {
-            KappaCells[celli] =
-                transportMixture.Kappa(pCells[celli], TCells[celli]);
-        }
-    }
-
-
-    volScalarField::Boundary& heBf =
-        this->he().boundaryFieldRef();
-
-    const auto& pBf = this->p_.boundaryField();
-
-    volScalarField::Boundary& TBf =
-        this->T_.boundaryFieldRef();
-
-    volScalarField::Boundary& CpBf =
-        this->Cp_.boundaryFieldRef();
-
-    volScalarField::Boundary& CvBf =
-        this->Cv_.boundaryFieldRef();
-
-    volScalarField::Boundary& rhoBf =
-        this->rho_.boundaryFieldRef();
-
-    volScalarField::Boundary& kappaBf =
-        this->kappa_.boundaryFieldRef();
-
-    volVectorField::Boundary& KappaBf =
-        this->Kappa_.boundaryFieldRef();
-
-    forAll(this->T_.boundaryField(), patchi)
-    {
-        fvPatchScalarField& phe = heBf[patchi];
-        const auto& pp = pBf[patchi];
-        fvPatchScalarField& pT = TBf[patchi];
-        fvPatchScalarField& pCp = CpBf[patchi];
-        fvPatchScalarField& pCv = CvBf[patchi];
-        fvPatchScalarField& prho = rhoBf[patchi];
-        fvPatchScalarField& pkappa = kappaBf[patchi];
-        fvPatchVectorField& pKappa = KappaBf[patchi];
-
-        if (pT.fixesValue())
-        {
-            forAll(pT, facei)
-            {
-                auto composition =
-                    this->patchFaceComposition(Yslicer, patchi, facei);
-
-                const typename BaseThermo::mixtureType::thermoMixtureType&
-                    thermoMixture = this->thermoMixture(composition);
-
-                const typename BaseThermo::mixtureType::transportMixtureType&
-                    transportMixture =
-                    this->transportMixture(composition, thermoMixture);
-
-                phe[facei] = thermoMixture.he(pp[facei], pT[facei]);
-
-                prho[facei] = thermoMixture.rho(pp[facei], pT[facei]);
-                pCp[facei] = thermoMixture.Cp(pp[facei], pT[facei]);
-                pCv[facei] = thermoMixture.Cv(pp[facei], pT[facei]);
-
-                if (isotropic)
-                {
-                    pkappa[facei] =
-                        transportMixture.kappa(pp[facei], pT[facei]);
-                }
-                else
-                {
-                    pKappa[facei] =
-                        transportMixture.Kappa(pp[facei], pT[facei]);
-                }
-            }
-        }
-        else
-        {
-            forAll(pT, facei)
-            {
-                auto composition =
-                    this->patchFaceComposition(Yslicer, patchi, facei);
-
-                const typename BaseThermo::mixtureType::thermoMixtureType&
-                    thermoMixture = this->thermoMixture(composition);
-
-                const typename BaseThermo::mixtureType::transportMixtureType&
-                    transportMixture =
-                    this->transportMixture(composition, thermoMixture);
-
-                pT[facei] = thermoMixture.The(phe[facei], pp[facei] ,pT[facei]);
-
-                prho[facei] = thermoMixture.rho(pp[facei], pT[facei]);
-                pCp[facei] = thermoMixture.Cp(pp[facei], pT[facei]);
-                pCv[facei] = thermoMixture.Cv(pp[facei], pT[facei]);
-
-                if (isotropic)
-                {
-                    pkappa[facei] =
-                        transportMixture.kappa(pp[facei], pT[facei]);
-                }
-                else
-                {
-                    pKappa[facei] =
-                        transportMixture.Kappa(pp[facei], pT[facei]);
-                }
-            }
-        }
-    }
+    defineTypeNameAndDebug(solidThermo, 0);
+    defineRunTimeSelectionTable(solidThermo, fvMesh);
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::SolidThermo<BaseThermo>::SolidThermo
+Foam::solidThermo::implementation::implementation
 (
+    const dictionary& dict,
     const fvMesh& mesh,
     const word& phaseName
 )
 :
-    BaseThermo(mesh, phaseName),
-    Kappa_
+    p_
     (
         IOobject
         (
-            BaseThermo::phasePropertyName("Kappa", phaseName),
+            phasePropertyName("p", phaseName),
             mesh.time().name(),
             mesh,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh,
-        dimensionedVector(dimThermalConductivity, Zero)
+        dimensionedScalar(phasePropertyName("p", phaseName), dimPressure, NaN)
     )
+{}
+
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::solidThermo> Foam::solidThermo::New
+(
+    const fvMesh& mesh,
+    const word& phaseName
+)
 {
-    calculate();
+    return basicThermo::New<solidThermo>(mesh, phaseName);
 }
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::SolidThermo<BaseThermo>::~SolidThermo()
+Foam::solidThermo::~solidThermo()
 {}
 
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class BaseThermo>
-void Foam::SolidThermo<BaseThermo>::correct()
-{
-    if (BaseThermo::debug)
-    {
-        InfoInFunction << endl;
-    }
-
-    calculate();
-
-    if (BaseThermo::debug)
-    {
-        Info<< "    Finished" << endl;
-    }
-}
-
-
-template<class BaseThermo>
-const Foam::volVectorField&
-Foam::SolidThermo<BaseThermo>::Kappa() const
-{
-    return Kappa_;
-}
+Foam::solidThermo::implementation::~implementation()
+{}
 
 
 // ************************************************************************* //

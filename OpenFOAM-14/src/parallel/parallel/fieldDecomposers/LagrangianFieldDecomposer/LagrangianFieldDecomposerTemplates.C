@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,195 +23,41 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "LagrangianFieldDecomposer.H"
-#include "LagrangianFields.H"
+#include "lagrangianFieldDecomposer.H"
+#include "cloud.H"
 #include "IOobjectList.H"
+#include "CompactIOField.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-template<class GeoField>
-bool Foam::LagrangianFieldDecomposer::decomposes(const IOobjectList& objects)
-{
-    return !objects.lookupClass(GeoField::typeName).empty();
-}
-
-
-template<class Type, template<class> class PrimitiveField>
-Foam::PtrList
+template
 <
-    Foam::DimensionedField<Type, Foam::LagrangianMesh, PrimitiveField>
+    class Type,
+    template<class> class ReadIOContainer,
+    template<class> class IOContainer
 >
-Foam::LagrangianFieldDecomposer::decomposeLagrangianField
-(
-    const DimensionedField<Type, LagrangianMesh, PrimitiveField>& completeField
-) const
-{
-    PtrList<DimensionedField<Type, LagrangianMesh, PrimitiveField>>
-        procFields(procMeshes_.size());
-
-    forAll(procMeshes_, proci)
-    {
-        procFields.set
-        (
-            proci,
-            new DimensionedField<Type, LagrangianMesh, PrimitiveField>
-            (
-                IOobject
-                (
-                    completeField.name(),
-                    procMeshes_[proci].time().name(),
-                    procMeshes_[proci],
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                procMeshes_[proci],
-                completeField.dimensions(),
-                PrimitiveField<Type>
-                (
-                    completeField,
-                    particleProcAddressing_[proci]
-                )
-            )
-        );
-    }
-
-    return procFields;
-}
-
-
-template<class Type, template<class> class PrimitiveField>
-Foam::PtrList
-<
-    Foam::GeometricField<Type, Foam::LagrangianMesh, PrimitiveField>
->
-Foam::LagrangianFieldDecomposer::decomposeLagrangianField
-(
-    const GeometricField<Type, LagrangianMesh, PrimitiveField>& completeField
-) const
-{
-    PtrList<GeometricField<Type, LagrangianMesh, PrimitiveField>>
-        procFields(procMeshes_.size());
-
-    forAll(procMeshes_, proci)
-    {
-        // Construct a list of patch fields. Clone the global fields.
-        // Null-construct new processor-specific ones. Note that we supply the
-        // complete field as the internal field reference. This is a
-        // placeholder and will get replaced with the processor field when this
-        // set of patch fields is cloned to produce the final field.
-        PtrList<LagrangianPatchField<Type>> procPatchFields
-        (
-            procMeshes_[proci].boundary().size()
-        );
-        forAll(completeField.boundaryField(), completePatchi)
-        {
-            procPatchFields.set
-            (
-                completePatchi,
-                completeField.boundaryField()[completePatchi].clone
-                (
-                    completeField
-                )
-            );
-        }
-        for
-        (
-            label procPatchi = completeMesh_.boundary().size();
-            procPatchi < procMeshes_[proci].boundary().size();
-            ++ procPatchi
-        )
-        {
-            procPatchFields.set
-            (
-                procPatchi,
-                LagrangianPatchField<Type>::New
-                (
-                    procMeshes_[proci].boundary()[procPatchi].type(),
-                    procMeshes_[proci].boundary()[procPatchi],
-                    completeField
-                )
-            );
-        }
-
-        // Construct the field
-        procFields.set
-        (
-            proci,
-            new GeometricField<Type, LagrangianMesh, PrimitiveField>
-            (
-                IOobject
-                (
-                    completeField.name(),
-                    procMeshes_[proci].time().name(),
-                    procMeshes_[proci],
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                procMeshes_[proci],
-                completeField.dimensions(),
-                PrimitiveField<Type>
-                (
-                    completeField,
-                    particleProcAddressing_[proci]
-                ),
-                procPatchFields,
-                completeField.sources().table()
-            )
-        );
-    }
-
-    return procFields;
-}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class GeoField>
-Foam::PtrList<GeoField>
-Foam::LagrangianFieldDecomposer::decomposeField
-(
-    const IOobject& fieldIo
-) const
-{
-    return
-        decomposeLagrangianField
-        (
-            GeoField
-            (
-                IOobject
-                (
-                    fieldIo.name(),
-                    completeMesh_.time().name(),
-                    completeMesh_,
-                    IOobject::MUST_READ,
-                    IOobject::NO_WRITE,
-                    false
-                ),
-                completeMesh_
-            )
-        );
-}
-
-
-template<class GeoField>
-void Foam::LagrangianFieldDecomposer::decomposeFields
+void Foam::lagrangianFieldDecomposer::decomposeFields
 (
     const IOobjectList& objects
 ) const
 {
-    IOobjectList fields = objects.lookupClass(GeoField::typeName);
+    const word& fieldClassName = ReadIOContainer<Type>::typeName;
+
+    IOobjectList fields = objects.lookupClass(fieldClassName);
 
     if (fields.size())
     {
-        Info<< nl << "    Decomposing " << GeoField::typeName << "s"
-            << nl << endl;
+        Info<< nl << "    Decomposing " << fieldClassName << "s" << nl << endl;
 
         forAllConstIter(IOobjectList, fields, fieldIter)
         {
             Info<< "        " << fieldIter()->name() << endl;
 
-            const PtrList<GeoField> procFields =
-                decomposeField<GeoField>(*fieldIter());
+            const PtrList<IOContainer<Type>> procFields =
+                decomposeField<Type, ReadIOContainer, IOContainer>
+                (
+                    *fieldIter()
+                );
 
             forAll(procFields, proci)
             {
@@ -219,6 +65,63 @@ void Foam::LagrangianFieldDecomposer::decomposeFields
             }
         }
     }
+}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+template
+<
+    class Type,
+    template<class> class ReadIOContainer,
+    template<class> class IOContainer
+>
+Foam::PtrList<IOContainer<Type>>
+Foam::lagrangianFieldDecomposer::decomposeField
+(
+    const IOobject& fieldIoObject
+) const
+{
+    // Read the complete field
+    const ReadIOContainer<Type> field(fieldIoObject);
+
+    // Construct the processor fields
+    PtrList<IOContainer<Type>> procFields(procMeshes_.size());
+    forAll(procMeshes_, proci)
+    {
+        procFields.set
+        (
+            proci,
+            new IOContainer<Type>
+            (
+                IOobject
+                (
+                    field.name(),
+                    procMeshes_[proci].time().name(),
+                    lagrangian::cloud::prefix/cloudName_,
+                    procMeshes_[proci],
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE,
+                    false
+                ),
+                Field<Type>(field, particleProcAddressing_[proci])
+            )
+        );
+    }
+
+    return procFields;
+}
+
+
+template<class Type>
+void Foam::lagrangianFieldDecomposer::decomposeFields
+(
+    const IOobjectList& objects
+) const
+{
+    decomposeFields<Type, IOField, IOField>(objects);
+    decomposeFields<Field<Type>, IOField, CompactIOField>(objects);
+    decomposeFields<Field<Type>, CompactIOField, CompactIOField>(objects);
 }
 
 

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -21,229 +21,225 @@ License
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
+Description
+    Multiply a given vector (second argument) by the matrix or its transpose
+    and return the result in the first argument.
+
 \*---------------------------------------------------------------------------*/
 
-#include "LduMatrix.H"
-#include "LduInterfaceFieldPtrsList.H"
+#include "lduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-namespace Foam
-{
-
-template<class Type, class LUType>
-class Amultiplier
-:
-    public LduInterfaceField<Type>::Amultiplier
-{
-    const Field<LUType>& A_;
-
-public:
-
-    Amultiplier(const Field<LUType>& A)
-    :
-        A_(A)
-    {}
-
-    virtual ~Amultiplier()
-    {}
-
-    virtual void addAmul(Field<Type>& Apsi, const Field<Type>& psi) const
-    {
-        Apsi += A_*psi;
-    }
-};
-
-}
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-template<class Type, class DType, class LUType>
-void Foam::LduMatrix<Type, DType, LUType>::Amul
+void Foam::lduMatrix::Amul
 (
-    Field<Type>& Apsi,
-    const tmp<Field<Type>>& tpsi
+    scalarField& Apsi,
+    const tmp<scalarField>& tpsi,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const direction cmpt
 ) const
 {
-    Type* __restrict__ ApsiPtr = Apsi.begin();
+    scalar* __restrict__ ApsiPtr = Apsi.begin();
 
-    const Field<Type>& psi = tpsi();
-    const Type* const __restrict__ psiPtr = psi.begin();
+    const scalarField& psi = tpsi();
+    const scalar* const __restrict__ psiPtr = psi.begin();
 
-    const DType* const __restrict__ diagPtr = diag().begin();
+    const scalar* const __restrict__ diagPtr = diag().begin();
 
     const label* const __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* const __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
-    const LUType* const __restrict__ upperPtr = upper().begin();
-    const LUType* const __restrict__ lowerPtr = lower().begin();
+    const scalar* const __restrict__ upperPtr = upper().begin();
+    const scalar* const __restrict__ lowerPtr = lower().begin();
 
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
-        interfacesUpper_,
+        interfaceBouCoeffs,
+        interfaces,
         psi,
-        Apsi
+        Apsi,
+        cmpt
     );
 
     const label nCells = diag().size();
     for (label cell=0; cell<nCells; cell++)
     {
-        ApsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
+        ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
     }
 
 
     const label nFaces = upper().size();
+
     for (label face=0; face<nFaces; face++)
     {
-        ApsiPtr[uPtr[face]] += dot(lowerPtr[face], psiPtr[lPtr[face]]);
-        ApsiPtr[lPtr[face]] += dot(upperPtr[face], psiPtr[uPtr[face]]);
+        ApsiPtr[uPtr[face]] += lowerPtr[face]*psiPtr[lPtr[face]];
+        ApsiPtr[lPtr[face]] += upperPtr[face]*psiPtr[uPtr[face]];
     }
 
     // Update interface interfaces
     updateMatrixInterfaces
     (
-        interfacesUpper_,
+        interfaceBouCoeffs,
+        interfaces,
         psi,
-        Apsi
+        Apsi,
+        cmpt
     );
 
     tpsi.clear();
 }
 
 
-template<class Type, class DType, class LUType>
-void Foam::LduMatrix<Type, DType, LUType>::Tmul
+void Foam::lduMatrix::Tmul
 (
-    Field<Type>& Tpsi,
-    const tmp<Field<Type>>& tpsi
+    scalarField& Tpsi,
+    const tmp<scalarField>& tpsi,
+    const FieldField<Field, scalar>& interfaceIntCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const direction cmpt
 ) const
 {
-    Type* __restrict__ TpsiPtr = Tpsi.begin();
+    scalar* __restrict__ TpsiPtr = Tpsi.begin();
 
-    const Field<Type>& psi = tpsi();
-    const Type* const __restrict__ psiPtr = psi.begin();
+    const scalarField& psi = tpsi();
+    const scalar* const __restrict__ psiPtr = psi.begin();
 
-    const DType* const __restrict__ diagPtr = diag().begin();
+    const scalar* const __restrict__ diagPtr = diag().begin();
 
     const label* const __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* const __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
-    const LUType* const __restrict__ lowerPtr = lower().begin();
-    const LUType* const __restrict__ upperPtr = upper().begin();
+    const scalar* const __restrict__ lowerPtr = lower().begin();
+    const scalar* const __restrict__ upperPtr = upper().begin();
 
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
-        interfacesLower_,
+        interfaceIntCoeffs,
+        interfaces,
         psi,
-        Tpsi
+        Tpsi,
+        cmpt
     );
 
     const label nCells = diag().size();
     for (label cell=0; cell<nCells; cell++)
     {
-        TpsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
+        TpsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
     }
 
     const label nFaces = upper().size();
     for (label face=0; face<nFaces; face++)
     {
-        TpsiPtr[uPtr[face]] += dot(upperPtr[face], psiPtr[lPtr[face]]);
-        TpsiPtr[lPtr[face]] += dot(lowerPtr[face], psiPtr[uPtr[face]]);
+        TpsiPtr[uPtr[face]] += upperPtr[face]*psiPtr[lPtr[face]];
+        TpsiPtr[lPtr[face]] += lowerPtr[face]*psiPtr[uPtr[face]];
     }
 
     // Update interface interfaces
     updateMatrixInterfaces
     (
-        interfacesLower_,
+        interfaceIntCoeffs,
+        interfaces,
         psi,
-        Tpsi
+        Tpsi,
+        cmpt
     );
 
     tpsi.clear();
 }
 
 
-template<class Type, class DType, class LUType>
-void Foam::LduMatrix<Type, DType, LUType>::sumA
+void Foam::lduMatrix::sumA
 (
-    Field<Type>& sumA
+    scalarField& sumA,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces
 ) const
 {
-    Type* __restrict__ sumAPtr = sumA.begin();
+    scalar* __restrict__ sumAPtr = sumA.begin();
 
-    const DType* __restrict__ diagPtr = diag().begin();
+    const scalar* __restrict__ diagPtr = diag().begin();
 
     const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
-    const LUType* __restrict__ lowerPtr = lower().begin();
-    const LUType* __restrict__ upperPtr = upper().begin();
+    const scalar* __restrict__ lowerPtr = lower().begin();
+    const scalar* __restrict__ upperPtr = upper().begin();
 
     const label nCells = diag().size();
     const label nFaces = upper().size();
 
     for (label cell=0; cell<nCells; cell++)
     {
-        sumAPtr[cell] = dot(diagPtr[cell], pTraits<Type>::one);
+        sumAPtr[cell] = diagPtr[cell];
     }
 
     for (label face=0; face<nFaces; face++)
     {
-        sumAPtr[uPtr[face]] += dot(lowerPtr[face], pTraits<Type>::one);
-        sumAPtr[lPtr[face]] += dot(upperPtr[face], pTraits<Type>::one);
+        sumAPtr[uPtr[face]] += lowerPtr[face];
+        sumAPtr[lPtr[face]] += upperPtr[face];
     }
 
     // Add the interface internal coefficients to diagonal
     // and the interface boundary coefficients to the sum-off-diagonal
-    forAll(interfaces_, patchi)
+    forAll(interfaces, patchi)
     {
-        if (interfaces_.set(patchi))
+        if (interfaces.set(patchi))
         {
             const labelUList& pa = lduAddr().patchAddr(patchi);
-            const Field<LUType>& pCoeffs = interfacesUpper_[patchi];
+            const scalarField& pCoeffs = interfaceBouCoeffs[patchi];
 
             forAll(pa, face)
             {
-                sumAPtr[pa[face]] -= dot(pCoeffs[face], pTraits<Type>::one);
+                sumAPtr[pa[face]] -= pCoeffs[face];
             }
         }
     }
 }
 
 
-template<class Type, class DType, class LUType>
-void Foam::LduMatrix<Type, DType, LUType>::residual
+void Foam::lduMatrix::residual
 (
-    Field<Type>& rA,
-    const Field<Type>& psi
+    scalarField& rA,
+    const scalarField& psi,
+    const scalarField& source,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const direction cmpt
 ) const
 {
-    Type* __restrict__ rAPtr = rA.begin();
+    scalar* __restrict__ rAPtr = rA.begin();
 
-    const Type* const __restrict__ psiPtr = psi.begin();
-    const DType* const __restrict__ diagPtr = diag().begin();
-    const Type* const __restrict__ sourcePtr = source().begin();
+    const scalar* const __restrict__ psiPtr = psi.begin();
+    const scalar* const __restrict__ diagPtr = diag().begin();
+    const scalar* const __restrict__ sourcePtr = source.begin();
 
     const label* const __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* const __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
-    const LUType* const __restrict__ upperPtr = upper().begin();
-    const LUType* const __restrict__ lowerPtr = lower().begin();
+    const scalar* const __restrict__ upperPtr = upper().begin();
+    const scalar* const __restrict__ lowerPtr = lower().begin();
 
     // Parallel boundary initialisation.
     // Note: there is a change of sign in the coupled
-    // interface update to add the contribution to the r.h.s.
+    // interface update.  The reason for this is that the
+    // internal coefficients are all located at the l.h.s. of
+    // the matrix whereas the "implicit" coefficients on the
+    // coupled boundaries are all created as if the
+    // coefficient contribution is of a source-kind (i.e. they
+    // have a sign as if they are on the r.h.s. of the matrix.
+    // To compensate for this, it is necessary to turn the
+    // sign of the contribution.
 
-    FieldField<Field, LUType> mBouCoeffs(interfacesUpper_.size());
+    FieldField<Field, scalar> mBouCoeffs(interfaceBouCoeffs.size());
 
     forAll(mBouCoeffs, patchi)
     {
-        if (interfaces_.set(patchi))
+        if (interfaces.set(patchi))
         {
-            mBouCoeffs.set(patchi, -interfacesUpper_[patchi]);
+            mBouCoeffs.set(patchi, -interfaceBouCoeffs[patchi]);
         }
     }
 
@@ -251,43 +247,83 @@ void Foam::LduMatrix<Type, DType, LUType>::residual
     initMatrixInterfaces
     (
         mBouCoeffs,
+        interfaces,
         psi,
-        rA
+        rA,
+        cmpt
     );
 
     const label nCells = diag().size();
     for (label cell=0; cell<nCells; cell++)
     {
-        rAPtr[cell] = sourcePtr[cell] - dot(diagPtr[cell], psiPtr[cell]);
+        rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];
     }
 
 
     const label nFaces = upper().size();
+
     for (label face=0; face<nFaces; face++)
     {
-        rAPtr[uPtr[face]] -= dot(lowerPtr[face], psiPtr[lPtr[face]]);
-        rAPtr[lPtr[face]] -= dot(upperPtr[face], psiPtr[uPtr[face]]);
+        rAPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
+        rAPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
     }
 
     // Update interface interfaces
     updateMatrixInterfaces
     (
         mBouCoeffs,
+        interfaces,
         psi,
-        rA
+        rA,
+        cmpt
     );
 }
 
 
-template<class Type, class DType, class LUType>
-Foam::tmp<Foam::Field<Type>> Foam::LduMatrix<Type, DType, LUType>::residual
+Foam::tmp<Foam::scalarField> Foam::lduMatrix::residual
 (
-    const Field<Type>& psi
+    const scalarField& psi,
+    const scalarField& source,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const direction cmpt
 ) const
 {
-    tmp<Field<Type>> trA(new Field<Type>(psi.size()));
-    residual(trA.ref(), psi);
+    tmp<scalarField> trA(new scalarField(psi.size()));
+    residual(trA.ref(), psi, source, interfaceBouCoeffs, interfaces, cmpt);
     return trA;
+}
+
+
+Foam::tmp<Foam::scalarField > Foam::lduMatrix::H1() const
+{
+    tmp<scalarField > tH1
+    (
+        new scalarField(lduAddr().size(), 0.0)
+    );
+
+    if (lowerPtr_ || upperPtr_)
+    {
+        scalarField& H1_ = tH1.ref();
+
+        scalar* __restrict__ H1Ptr = H1_.begin();
+
+        const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
+        const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
+
+        const scalar* __restrict__ lowerPtr = lower().begin();
+        const scalar* __restrict__ upperPtr = upper().begin();
+
+        const label nFaces = upper().size();
+
+        for (label face=0; face<nFaces; face++)
+        {
+            H1Ptr[uPtr[face]] -= lowerPtr[face];
+            H1Ptr[lPtr[face]] -= upperPtr[face];
+        }
+    }
+
+    return tH1;
 }
 
 

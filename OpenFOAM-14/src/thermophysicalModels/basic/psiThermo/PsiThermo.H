@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,20 +22,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::PsiThermo
+    Foam::psiThermo
 
 Description
-    Thermo implementation based on compressibility
+    Base-class for fluid thermodynamic properties based on compressibility.
+
+See also
+    Foam::basicThermo
 
 SourceFiles
-    PsiThermo.C
+    psiThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef PsiThermo_H
-#define PsiThermo_H
+#ifndef psiThermo_H
+#define psiThermo_H
 
-#include "BasicThermo.H"
+#include "PsiThermo.H"
+#include "pureThermo.H"
+#include "fluidThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,56 +48,177 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                         Class PsiThermo Declaration
+                          Class psiThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class Thermo>
-class PsiThermo
+class psiThermo
 :
-    public Thermo
+    virtual public fluidThermo
 {
-    // Private Member Functions
-
-        //- Calculate the thermo variables
-        void calculate();
-
 public:
 
-    // Constructors
+    // Public Classes
 
-        //- Construct from mesh and phase name
-        PsiThermo(const fvMesh&, const word& phaseName);
+        //- Forward declare the implementation class
+        class implementation;
 
-        //- Disallow default bitwise copy construction
-        PsiThermo(const PsiThermo<Thermo>&) = delete;
+        //- Forward declare the composite class
+        class composite;
+
+
+    // Public Typedefs
+
+        //- The derived type
+        template<class MixtureType>
+        using DerivedThermoType =
+            PsiThermo<BasicThermo<MixtureType, composite>>;
+
+        //- The derived name
+        static word derivedThermoName()
+        {
+            return "hePsiThermo";
+        }
+
+
+    //- Runtime type information
+    TypeName("psiThermo");
+
+
+    //- Declare run-time constructor selection table
+    declareRunTimeSelectionTable
+    (
+        autoPtr,
+        psiThermo,
+        fvMesh,
+        (const fvMesh& mesh, const word& phaseName),
+        (mesh, phaseName)
+    );
+
+
+    // Selectors
+
+        //- Standard selection based on fvMesh
+        static autoPtr<psiThermo> New
+        (
+            const fvMesh& mesh,
+            const word& phaseName=word::null
+        );
 
 
     //- Destructor
-    virtual ~PsiThermo();
+    virtual ~psiThermo();
 
 
     // Member Functions
 
-        //- Update properties
-        virtual void correct();
+        // Derived thermodynamic properties
+
+            //- Density [kg/m^3] - uses current value of pressure
+            virtual tmp<volScalarField> rho() const = 0;
+
+            //- Density for patch [kg/m^3]
+            virtual tmp<scalarField> rho(const label patchi) const = 0;
+
+            //- Return the thermodynamic density field [kg/m^3]
+            //  This is used by solvers which create a separate continuity rho
+            virtual tmp<volScalarField> renameRho();
+
+            //- Update the density corresponding to the given pressure change
+            //  Used to update the density field following pressure solution
+            //  For psiThermo does nothing.
+            virtual void correctRho(const volScalarField& dp);
+};
+
+
+/*---------------------------------------------------------------------------*\
+                  Class psiThermo::implementation Declaration
+\*---------------------------------------------------------------------------*/
+
+class psiThermo::implementation
+:
+    virtual public psiThermo
+{
+public:
+
+    // Constructors
+
+        //- Construct from dictionary, mesh and phase name
+        implementation(const dictionary&, const fvMesh&, const word&);
+
+        //- Disallow default bitwise copy construction
+        implementation(const implementation&) = delete;
+
+
+    //- Destructor
+    virtual ~implementation();
+
+
+    // Member Functions
+
+        // Derived thermodynamic properties
+
+            //- Density [kg/m^3] - uses current value of pressure
+            virtual tmp<volScalarField> rho() const;
+
+            //- Density for patch [kg/m^3]
+            virtual tmp<scalarField> rho(const label patchi) const;
 
 
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const PsiThermo<Thermo>&) = delete;
+        void operator=(const implementation&) = delete;
+};
+
+
+/*---------------------------------------------------------------------------*\
+                    Class psiThermo::composite Declaration
+\*---------------------------------------------------------------------------*/
+
+class psiThermo::composite
+:
+    public basicThermo::implementation,
+    public pureThermo,
+    public fluidThermo::implementation,
+    public psiThermo::implementation
+{
+public:
+
+    // Constructors
+
+        //- Construct from dictionary, mesh and phase name
+        composite
+        (
+            const dictionary& dict,
+            const fvMesh& mesh,
+            const word& phaseName
+        )
+        :
+            basicThermo::implementation(dict, mesh, phaseName),
+            fluidThermo::implementation(dict, mesh, phaseName),
+            psiThermo::implementation(dict, mesh, phaseName)
+        {}
+
+        //- Construct from dictionary, mesh and phase name
+        template<class MixtureType>
+        composite
+        (
+            const dictionary& dict,
+            const MixtureType& mixture,
+            const fvMesh& mesh,
+            const word& phaseName
+        )
+        :
+            basicThermo::implementation(dict, mesh, phaseName),
+            fluidThermo::implementation(dict, mesh, phaseName),
+            psiThermo::implementation(dict, mesh, phaseName)
+        {}
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "PsiThermo.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,9 +22,30 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::DeletableMeshObject
+    Foam::meshObjects
 
 Description
+    Templated abstract base-class for optional mesh objects used to automate
+    their allocation to the mesh database and the mesh-modifier event-loop.
+
+    MeshObject is templated on the type of mesh it is allocated to, the type of
+    the mesh object (DeletableMeshObject, MoveableMeshObject,
+    DistributeableMeshObject, TopoChangeableMeshObject) and the type of the
+    actual object it is created for example:
+
+    \verbatim
+    class leastSquaresVectors
+    :
+        public MeshObject<fvMesh, MoveableMeshObject, leastSquaresVectors>
+    {
+    .
+    .
+    .
+        //- Delete the least square vectors when the mesh moves
+        virtual bool movePoints();
+    };
+    \endverbatim
+
     MeshObject types:
 
     - DeletableMeshObject:
@@ -40,16 +61,22 @@ Description
     - RepatchableMeshObject:
         mesh object to be updated on patch or topology change,
         mesh-to-mesh mapping, redistribution or motion otherwise deleted
-    - PermanentMeshObject:
-        mesh object to be updated on patch or topology change,
-        mesh-to-mesh mapping, redistribution or motion and never deleted
+
+    Note:
+        movePoints must be provided for MeshObjects of type MoveableMeshObject
+        and both movePoints and topoChange functions must exist, provided for
+        MeshObjects of type TopoChangeableMeshObject.
+
+SourceFiles
+    meshObject.C
+    meshObjects.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef MeshObjects_H
-#define MeshObjects_H
+#ifndef meshObjects_H
+#define meshObjects_H
 
-#include "regIOobject.H"
+#include "objectRegistry.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -60,167 +87,81 @@ namespace Foam
 class polyTopoChangeMap;
 class polyMeshMap;
 class polyDistributionMap;
-class meshObjects;
 
 /*---------------------------------------------------------------------------*\
-                    Class DeletableMeshObject Declaration
+                          Class meshObjects Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class Mesh>
-class DeletableMeshObject
+class meshObjects
 {
-    //- Reference to the regIOobject of the base-class
-    regIOobject& io_;
+    //- Checkout and delete object if owned by registry
+    //  otherwise error
+    template<class Mesh>
+    static void Delete(regIOobject&);
 
-    //- The regIOobject reference is used by the meshObjects functions
-    friend class meshObjects;
 
 public:
 
-    template<class Type>
-    DeletableMeshObject(Type& mo)
-    :
-        io_(mo)
-    {}
+    ClassName("meshObjects");
 
-    //- Virtual destructor to make class polymorphic
-    virtual ~DeletableMeshObject() = default;
-};
+    template<class Mesh>
+    static void movePoints(objectRegistry&);
 
+    template<class Mesh>
+    static void topoChange(objectRegistry&, const polyTopoChangeMap&);
 
-/*---------------------------------------------------------------------------*\
-                    Class MoveableMeshObject Declaration
-\*---------------------------------------------------------------------------*/
+    template<class Mesh>
+    static void mapMesh(objectRegistry&, const polyMeshMap&);
 
-template<class Mesh>
-class MoveableMeshObject
-:
-    public DeletableMeshObject<Mesh>
-{
-public:
+    template<class Mesh>
+    static void swap(objectRegistry&, Mesh& otherMesh);
 
-    template<class Type>
-    MoveableMeshObject(Type& mo)
-    :
-        DeletableMeshObject<Mesh>(mo)
-    {}
+    template<class Mesh>
+    static void distribute(objectRegistry&, const polyDistributionMap&);
 
-    //- Update for mesh motion
-    virtual bool movePoints() = 0;
-};
+    template<class Mesh>
+    static void addPatch(objectRegistry&, const label patchi);
 
-
-/*---------------------------------------------------------------------------*\
-                    Class DistributeableMeshObject Declaration
-\*---------------------------------------------------------------------------*/
-
-template<class Mesh>
-class DistributeableMeshObject
-:
-    public MoveableMeshObject<Mesh>
-{
-public:
-
-    template<class Type>
-    DistributeableMeshObject(Type& mo)
-    :
-        MoveableMeshObject<Mesh>(mo)
-    {}
-
-    //- Redistribute or update using the given distribution map
-    virtual void distribute(const polyDistributionMap& map) = 0;
-};
-
-
-/*---------------------------------------------------------------------------*\
-                    Class TopoChangeableMeshObject Declaration
-\*---------------------------------------------------------------------------*/
-
-template<class Mesh>
-class TopoChangeableMeshObject
-:
-    public DistributeableMeshObject<Mesh>
-{
-public:
-
-    template<class Type>
-    TopoChangeableMeshObject(Type& mo)
-    :
-        DistributeableMeshObject<Mesh>(mo)
-    {}
-
-    //- Update topology using the given map
-    virtual void topoChange(const polyTopoChangeMap& map) = 0;
-
-    //- Update from another mesh using the given map
-    virtual void mapMesh(const polyMeshMap& map) = 0;
-
-    //- Swap mesh
-    //  For run-time mesh replacement and mesh to mesh mapping
-    virtual void swap(Mesh& otherMesh)
-    {}
-};
-
-
-/*---------------------------------------------------------------------------*\
-                    Class RepatchableMeshObject Declaration
-\*---------------------------------------------------------------------------*/
-
-template<class Mesh>
-class RepatchableMeshObject
-:
-    public TopoChangeableMeshObject<Mesh>
-{
-public:
-
-    template<class Type>
-    RepatchableMeshObject(Type& mo)
-    :
-        TopoChangeableMeshObject<Mesh>(mo)
-    {}
-
-    //- Reordered/removed trailing patches. If validBoundary call is parallel
-    //  synced and all add the same patch with same settings
-    virtual void reorderPatches
+    template<class Mesh>
+    static void reorderPatches
     (
+        objectRegistry&,
         const labelUList& newToOld,
         const bool validBoundary
-    ) = 0;
+    );
 
-    //- Inserted patch at patchi
-    virtual void addPatch(const label patchi) = 0;
-};
+    template<class Mesh>
+    static void reset(objectRegistry&);
 
+    //- Clear all but permanent meshObjects of type MeshObjectType
+    template<class Mesh, template<class> class MeshObjectType>
+    static void clear(objectRegistry&);
 
+    //- Clear all meshObjects derived from FromType up to (but not including)
+    //  ToType. Used to clear e.g. all non-updateable meshObjects
+    template
+    <
+        class Mesh,
+        template<class> class FromType,
+        template<class> class ToType
+    >
+    static void clearUpto(objectRegistry&);
 
-/*---------------------------------------------------------------------------*\
-                    Class PermanentMeshObject Declaration
-\*---------------------------------------------------------------------------*/
-
-template<class Mesh>
-class PermanentMeshObject
-:
-    public RepatchableMeshObject<Mesh>
-{
-public:
-
-    template<class Type>
-    PermanentMeshObject(Type& mo)
-    :
-        RepatchableMeshObject<Mesh>(mo)
-    {}
-
-    //- Reset
-    virtual void reset() = 0;
-
-    //- Clear all but permanent registered meshObjects
-    virtual void clear() = 0;
+    //- Clear all meshObjects of type MeshObjectType
+    template<class Mesh, template<class> class MeshObjectType>
+    static void clearAll(objectRegistry&);
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "meshObjectsTemplates.C"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -22,24 +22,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::UMulticomponentMixture
-
-Description
-    Templated unburnt gas multicomponent mixture for a single fuel specie
-
-See also
     Foam::uMulticomponentMixture
 
+Description
+    Unburnt gas combustion multicomponent mixture for a single fuel specie
+
+    to provide composition support for unburnt chemistry integration for
+    e.g. knock simulations.
+
 SourceFiles
-    UMulticomponentMixture.C
+    uMulticomponentMixture.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef UMulticomponentMixture_H
-#define UMulticomponentMixture_H
+#ifndef uMulticomponentMixture_H
+#define uMulticomponentMixture_H
 
-#include "coefficientMulticomponentMixture.H"
-#include "uMulticomponentMixture.H"
+#include "uMixture.H"
+#include "speciesTable.H"
+#include "FieldListSlice.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,57 +48,75 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                    Class UMulticomponentMixture Declaration
+                    Class uMulticomponentMixture Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class ThermoType>
-class UMulticomponentMixture
+class uMulticomponentMixture
 :
-    public coefficientMulticomponentMixture<ThermoType>,
-    public uMulticomponentMixture
+    public uMixture
 {
+    // Private Data
+
+        //- Fuel specie index
+        label fu_;
+
+        //- Stoichiometric air/fuel ratio
+        scalar stoicRatio_;
+
 
 public:
 
+    //- Runtime type information
+    ClassName("uMulticomponent");
+
+
     // Constructors
 
-        //- Construct from a dictionary
-        UMulticomponentMixture(const dictionary&);
+        //- Construct from the speciesTable and dictionary
+        uMulticomponentMixture
+        (
+            const speciesTable& species,
+            const dictionary&
+        );
 
         //- Disallow default bitwise copy construction
-        UMulticomponentMixture
-        (
-            const UMulticomponentMixture<ThermoType>&
-        ) = delete;
+        uMulticomponentMixture(const uMulticomponentMixture&) = delete;
 
 
     // Member Functions
 
-        //- Return the instantiated type name
-        static word typeName()
+        //- Return the mixture type name
+        virtual const word& mixtureType() const
         {
-            return
-                uMulticomponentMixture::typeName
-              + '<' + ThermoType::typeName() + '>';
+            return typeName;
         }
+
+        //- Return the fuel specie index
+        label fu() const
+        {
+            return fu_;
+        }
+
+        //- Return the stoichiometric air/fuel ratio
+        scalar stoicRatio() const
+        {
+            return stoicRatio_;
+        }
+
+        //- Return the fuel-oxidant equivalence ratio
+        scalar Phi(const scalarFieldListSlice& Yu) const;
 
 
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const UMulticomponentMixture<ThermoType>&) = delete;
+        void operator=(const uMulticomponentMixture&) = delete;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "UMulticomponentMixture.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

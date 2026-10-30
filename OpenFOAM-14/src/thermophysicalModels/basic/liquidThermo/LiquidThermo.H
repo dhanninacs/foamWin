@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,20 +22,24 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::LiquidThermo
+    Foam::liquidThermo
 
 Description
-    Liquid thermo implementation
+    Base-class for liquid thermodynamic properties.
+
+See also
+    Foam::basicThermo
 
 SourceFiles
-    LiquidThermo.C
+    liquidThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef LiquidThermo_H
-#define LiquidThermo_H
+#ifndef liquidThermo_H
+#define liquidThermo_H
 
-#include "BasicThermo.H"
+#include "LiquidThermo.H"
+#include "rhoFluidThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,51 +47,101 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                         Class LiquidThermo Declaration
+                          Class liquidThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class BaseThermo>
-class LiquidThermo
+class liquidThermo
 :
-    public BaseThermo
+    virtual public rhoFluidThermo
 {
 public:
 
-    // Constructors
+    // Public Classes
 
-        //- Construct from mesh and phase name
-        LiquidThermo(const fvMesh&, const word& phaseName);
+        //- Forward declare the composite class
+        class composite;
 
-        //- Disallow default bitwise copy construction
-        LiquidThermo(const LiquidThermo<BaseThermo>&) = delete;
+
+    // Public Typedefs
+
+        //- The derived type
+        template<class MixtureType>
+        using DerivedThermoType =
+            LiquidThermo<RhoFluidThermo<BasicThermo<MixtureType, composite>>>;
+
+
+    //- Runtime type information
+    TypeName("liquidThermo");
+
+
+    //- Declare run-time constructor selection table
+    declareRunTimeSelectionTable
+    (
+        autoPtr,
+        liquidThermo,
+        fvMesh,
+        (const fvMesh& mesh, const word& phaseName),
+        (mesh, phaseName)
+    );
+
+
+    // Selectors
+
+        //- Standard selection based on fvMesh
+        static autoPtr<liquidThermo> New
+        (
+            const fvMesh&,
+            const word& phaseName=word::null
+        );
 
 
     //- Destructor
-    virtual ~LiquidThermo();
+    virtual ~liquidThermo();
 
 
     // Member Functions
 
         //- Surface tension [N/m]
-        virtual tmp<volScalarField> sigma() const;
+        virtual tmp<volScalarField> sigma() const = 0;
+};
 
 
-    // Member Operators
+/*---------------------------------------------------------------------------*\
+                    Class liquidThermo::composite Declaration
+\*---------------------------------------------------------------------------*/
 
-        //- Disallow default bitwise assignment
-        void operator=(const LiquidThermo<BaseThermo>&) = delete;
+class liquidThermo::composite
+:
+    public basicThermo::implementation,
+    public pureThermo,
+    public rhoThermo::implementation,
+    public fluidThermo::implementation,
+    public liquidThermo
+{
+public:
+
+    // Constructors
+
+        //- Construct from dictionary, mesh and phase name
+        template<class MixtureType>
+        composite
+        (
+            const dictionary& dict,
+            const MixtureType& mixture,
+            const fvMesh& mesh,
+            const word& phaseName
+        )
+        :
+            basicThermo::implementation(dict, mesh, phaseName),
+            rhoThermo::implementation(dict, mesh, phaseName),
+            fluidThermo::implementation(dict, mesh, phaseName)
+        {}
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "LiquidThermo.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

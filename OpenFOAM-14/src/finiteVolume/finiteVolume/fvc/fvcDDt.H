@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2022 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -25,19 +25,22 @@ InNamespace
     Foam::fvc
 
 Description
-    Calculate the substantive (total) derivative.
+    Calculate the first temporal derivative.
 
 SourceFiles
-    fvcDDt.C
+    fvcDdt.C
 
 \*---------------------------------------------------------------------------*/
 
 
-#ifndef fvcDDt_H
-#define fvcDDt_H
+#ifndef fvcDdt_H
+#define fvcDdt_H
 
 #include "volFieldsFwd.H"
 #include "surfaceFieldsFwd.H"
+#include "dimensionedTypes.H"
+#include "one.H"
+#include "geometricZeroField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,17 +54,150 @@ namespace Foam
 namespace fvc
 {
     template<class Type>
-    tmp<VolField<Type>> DDt
+    tmp<VolField<Type>> ddt
     (
-        const surfaceScalarField&,
+        const dimensioned<Type>,
+        const fvMesh&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
         const VolField<Type>&
     );
 
     template<class Type>
-    tmp<VolField<Type>> DDt
+    tmp<VolField<Type>> ddt
     (
-        const tmp<surfaceScalarField>&,
+        const dimensionedScalar&,
         const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const volScalarField&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const one&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const volScalarField&,
+        const volScalarField&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const one&,
+        const one&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const one&,
+        const volScalarField&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<VolField<Type>> ddt
+    (
+        const volScalarField&,
+        const one&,
+        const VolField<Type>&
+    );
+
+    template<class Type>
+    tmp<SurfaceField<Type>> ddt
+    (
+        const SurfaceField<Type>&
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const VolField<Type>& U,
+        const SurfaceField<Type>& Uf
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi,
+        const autoPtr<SurfaceField<Type>>& Uf
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<Type>& rhoUf
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi,
+        const autoPtr<SurfaceField<Type>>& rhoUf
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& alpha,
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<Type>& Uf
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& alpha,
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi
+    );
+
+    template<class Type>
+    tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+    (
+        const volScalarField& alpha,
+        const volScalarField& rho,
+        const VolField<Type>& U,
+        const SurfaceField<typename Foam::flux<Type>::type>& phi,
+        const autoPtr<SurfaceField<Type>>& Uf
     );
 }
 
@@ -73,7 +209,7 @@ namespace fvc
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "fvcDDt.C"
+    #include "fvcDdt.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

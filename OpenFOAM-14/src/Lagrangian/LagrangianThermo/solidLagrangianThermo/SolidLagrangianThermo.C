@@ -23,59 +23,93 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "SolidLagrangianThermo.H"
-#include "uniformGeometricFields.H"
+#include "solidLagrangianThermo.H"
 
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::SolidLagrangianThermo<BaseThermo>::~SolidLagrangianThermo()
+namespace Foam
+{
+    defineTypeNameAndDebug(solidLagrangianThermo, 0);
+    defineRunTimeSelectionTable(solidLagrangianThermo, LagrangianMesh);
+}
+
+// * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
+
+Foam::tmp<Foam::uniformDimensionedScalarField>
+Foam::solidLagrangianThermo::implementation::p(const LagrangianSubMesh&) const
+{
+    return p_;
+}
+
+
+Foam::tmp<Foam::uniformDimensionedScalarField>
+Foam::solidLagrangianThermo::implementation::p
+(
+    const LagrangianInjection&,
+    const LagrangianSubMesh&
+) const
+{
+    return p_;
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::solidLagrangianThermo::implementation::implementation
+(
+    const dictionary& dict,
+    const LagrangianMesh& mesh,
+    const word& phaseName
+)
+:
+    p_
+    (
+        IOobject
+        (
+            IOobject::groupName("p", phaseName),
+            mesh.time().name(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        dimensionedScalar(IOobject::groupName("p", phaseName), dimPressure, NaN)
+    )
 {}
 
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-void Foam::SolidLagrangianThermo<BaseThermo>::correct
+Foam::autoPtr<Foam::solidLagrangianThermo>
+Foam::solidLagrangianThermo::New
 (
-    const LagrangianSubMesh& subMesh
+    const LagrangianMesh& mesh,
+    const word& phaseName
 )
 {
-    if (BaseThermo::debug) InfoInFunction << endl;
-
-    const SubField<scalar> e = subMesh.sub(this->e_.primitiveField());
-
-    const UniformField<scalar>& p = this->p_.primitiveField();
-    SubField<scalar> T = subMesh.sub(this->T_.primitiveFieldRef());
-    SubField<scalar> rho = subMesh.sub(this->rho_.primitiveFieldRef());
-    SubField<scalar> Cv = subMesh.sub(this->Cv_.primitiveFieldRef());
-    SubField<scalar> kappa = subMesh.sub(this->kappa_.primitiveFieldRef());
-
-    auto Yslicer = this->Yslicer();
-
-    forAll(T, subi)
-    {
-        const label i = subMesh.start() + subi;
-
-        auto composition = this->elementComposition(Yslicer, i);
-
-        const typename BaseThermo::mixtureType::thermoMixtureType&
-            thermoMixture = this->thermoMixture(composition);
-
-        const typename BaseThermo::mixtureType::transportMixtureType&
-            transportMixture =
-            this->transportMixture(composition, thermoMixture);
-
-        T[subi] = thermoMixture.Tes(e[subi], p[subi], T[subi]);
-
-        rho[subi] = thermoMixture.rho(p[subi], T[subi]);
-        Cv[subi] = thermoMixture.Cv(p[subi], T[subi]);
-
-        kappa[subi] = transportMixture.kappa(p[subi], T[subi]);
-    }
-
-    if (BaseThermo::debug) Info<< "    Finished" << endl;
+    return basicLagrangianThermo::New<solidLagrangianThermo>(mesh, phaseName);
 }
+
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::solidLagrangianThermo::~solidLagrangianThermo()
+{}
+
+
+Foam::solidLagrangianThermo::implementation::~implementation()
+{}
+
+
+// * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
+
+void Foam::solidLagrangianThermo::initialise()
+{
+    correct(mesh().subAll());
+}
+
+
+void Foam::solidLagrangianThermo::correctPressure(const LagrangianSubMesh&)
+{}
 
 
 // ************************************************************************* //

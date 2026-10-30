@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,9 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "fvcDDt.H"
-#include "fvcDiv.H"
+#include "fvcDdt.H"
 #include "fvMesh.H"
+#include "ddtScheme.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -41,40 +41,318 @@ namespace fvc
 
 template<class Type>
 tmp<VolField<Type>>
-DDt
+ddt
 (
-    const surfaceScalarField& phi,
-    const VolField<Type>& psi
+    const dimensioned<Type> dt,
+    const fvMesh& mesh
 )
 {
-    tmp<VolField<Type>> ddtDivPhiPsi
-        = fvc::ddt(psi) + fvc::div(phi, psi);
-
-    if (phi.mesh()().moving())
-    {
-        return ddtDivPhiPsi - fvc::div(phi + phi.mesh()().phi())*psi;
-    }
-    else
-    {
-        return ddtDivPhiPsi - fvc::div(phi)*psi;
-    }
+    return fv::ddtScheme<Type>::New
+    (
+        mesh,
+        mesh.schemes().ddt("ddt(" + dt.name() + ')')
+    ).ref().fvcDdt(dt);
 }
 
 
 template<class Type>
 tmp<VolField<Type>>
-DDt
+ddt
 (
-    const tmp<surfaceScalarField>& tphi,
-    const VolField<Type>& psi
+    const VolField<Type>& vf
 )
 {
-    tmp<VolField<Type>> DDtPsi
+    return fv::ddtScheme<Type>::New
     (
-        fvc::DDt(tphi(), psi)
-    );
-    tphi.clear();
-    return DDtPsi;
+        vf.mesh(),
+        vf.mesh().schemes().ddt("ddt(" + vf.name() + ')')
+    ).ref().fvcDdt(vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const dimensionedScalar& rho,
+    const VolField<Type>& vf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        vf.mesh(),
+        vf.mesh().schemes().ddt("ddt(" + rho.name() + ',' + vf.name() + ')')
+    ).ref().fvcDdt(rho, vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const volScalarField& rho,
+    const VolField<Type>& vf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        vf.mesh(),
+        vf.mesh().schemes().ddt("ddt(" + rho.name() + ',' + vf.name() + ')')
+    ).ref().fvcDdt(rho, vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const one&,
+    const VolField<Type>& vf
+)
+{
+    return ddt(vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const volScalarField& alpha,
+    const volScalarField& rho,
+    const VolField<Type>& vf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        vf.mesh(),
+        vf.mesh().schemes().ddt
+        (
+            "ddt("
+          + alpha.name() + ','
+          + rho.name() + ','
+          + vf.name() + ')'
+        )
+    ).ref().fvcDdt(alpha, rho, vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const one&,
+    const one&,
+    const VolField<Type>& vf
+)
+{
+    return ddt(vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const one&,
+    const volScalarField& rho,
+    const VolField<Type>& vf
+)
+{
+    return ddt(rho, vf);
+}
+
+
+template<class Type>
+tmp<VolField<Type>>
+ddt
+(
+    const volScalarField& alpha,
+    const one&,
+    const VolField<Type>& vf
+)
+{
+    return ddt(alpha, vf);
+}
+
+
+template<class Type>
+tmp<SurfaceField<Type>>
+ddt
+(
+    const SurfaceField<Type>& sf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        sf.mesh(),
+        sf.mesh().schemes().ddt("ddt(" + sf.name() + ')')
+    ).ref().fvcDdt(sf);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const VolField<Type>& U,
+    const SurfaceField<Type>& Uf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt("ddt(" + U.name() + ')')
+    ).ref().fvcDdtUfCorr(U, Uf);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt("ddt(" + U.name() + ')')
+    ).ref().fvcDdtPhiCorr(U, phi);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi,
+    const autoPtr<SurfaceField<Type>>& Uf
+)
+{
+    if (Uf.valid())
+    {
+        return ddtCorr(U, Uf());
+    }
+    else
+    {
+        return ddtCorr(U, phi);
+    }
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<Type>& rhoUf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt
+        (
+            "ddt(" + rho.name() + U.name() + ')'
+        )
+    ).ref().fvcDdtUfCorr(rho, U, rhoUf);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt("ddt(" + rho.name() + ',' + U.name() + ')')
+    ).ref().fvcDdtPhiCorr(rho, U, phi);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi,
+    const autoPtr<SurfaceField<Type>>& rhoUf
+)
+{
+    if (rhoUf.valid())
+    {
+        return ddtCorr(rho, U, rhoUf());
+    }
+    else
+    {
+        return ddtCorr(rho, U, phi);
+    }
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& alpha,
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<Type>& Uf
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt
+        (
+            "ddt(" + alpha.name() + rho.name() + ',' + U.name() + ')'
+        )
+    ).ref().fvcDdtUfCorr(alpha, rho, U, Uf);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& alpha,
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi
+)
+{
+    return fv::ddtScheme<Type>::New
+    (
+        U.mesh(),
+        U.mesh().schemes().ddt
+        (
+            "ddt(" + alpha.name() + rho.name() + ',' + U.name() + ')'
+        )
+    ).ref().fvcDdtPhiCorr(alpha, rho, U, phi);
+}
+
+
+template<class Type>
+tmp<SurfaceField<typename Foam::flux<Type>::type>> ddtCorr
+(
+    const volScalarField& alpha,
+    const volScalarField& rho,
+    const VolField<Type>& U,
+    const SurfaceField<typename Foam::flux<Type>::type>& phi,
+    const autoPtr<SurfaceField<Type>>& Uf
+)
+{
+    if (Uf.valid())
+    {
+        return ddtCorr(alpha, rho, U, Uf());
+    }
+    else
+    {
+        return ddtCorr(alpha, rho, U, phi);
+    }
 }
 
 

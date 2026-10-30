@@ -22,24 +22,22 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::BHomogeneousMixture
-
-Description
-    Templated burnt gas mixture for homogeneous lean, stoichiometric or rich
-    conditions
-
-See also
     Foam::bHomogeneousMixture
 
+Description
+    Burnt gas mixture for homogeneous lean, stoichiometric or rich conditions
+
 SourceFiles
-    BHomogeneousMixture.C
+    bHomogeneousMixture.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef BHomogeneousMixture_H
-#define BHomogeneousMixture_H
+#ifndef bHomogeneousMixture_H
+#define bHomogeneousMixture_H
 
-#include "bHomogeneousMixture.H"
+#include "bMixture.H"
+#include "speciesTable.H"
+#include "boolList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,88 +45,60 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                     Class BHomogeneousMixture Declaration
+                     Class bHomogeneousMixture Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class ThermoType>
-class BHomogeneousMixture
+class bHomogeneousMixture
 :
-    public bHomogeneousMixture
+    public bMixture
 {
-public:
-
-    // Public Typedefs
-
-        //- The type of thermodynamics this mixture is instantiated for
-        typedef ThermoType thermoType;
-
-        //- Mixing type for thermodynamic properties
-        typedef ThermoType thermoMixtureType;
-
-        //- Mixing type for transport properties
-        typedef ThermoType transportMixtureType;
-
-
-private:
-
-    // Private Data
-
-        //- Products thermodynamic model
-        thermoType products_;
-
 
 public:
+
+    //- Runtime type information
+    ClassName("bHomogeneous");
+
 
     // Constructors
 
         //- Construct from a dictionary
-        BHomogeneousMixture(const dictionary&);
+        bHomogeneousMixture(const dictionary&);
 
         //- Disallow default bitwise copy construction
-        BHomogeneousMixture(const BHomogeneousMixture<ThermoType>&) = delete;
+        bHomogeneousMixture(const bHomogeneousMixture&) = delete;
+
+
+    //- Destructor
+    virtual ~bHomogeneousMixture()
+    {}
 
 
     // Member Functions
 
-        //- Return the instantiated type name
-        static word typeName()
+        //- Return the mixture type name
+        virtual const word& mixtureType() const
         {
-            return
-                bHomogeneousMixture::typeName
-              + '<' + ThermoType::typeName() + '>';
+            return typeName;
         }
 
-        inline const ThermoType& specieThermo(const label speciei) const
+        //- Return the table of species
+        const speciesTable& species() const
         {
-            return products_;
+            return speciesTable::null;
         }
 
-        //- Return the mixture for thermodynamic properties
-        const thermoMixtureType& thermoMixture
-        (
-            const scalarFieldListSlice&
-        ) const
+        //- Access the specie active flags
+        const boolList& speciesActive() const
         {
-            return products_;
+            NotImplemented;
+            return boolList::null();
         }
 
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&
-        ) const
+        //- Access the specie active flags
+        boolList& speciesActive()
         {
-            return products_;
-        }
-
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&,
-            const thermoMixtureType&
-        ) const
-        {
-            return products_;
+            NotImplemented;
+            return const_cast<boolList&>(boolList::null());
         }
 
         //- Read dictionary
@@ -138,19 +108,13 @@ public:
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const BHomogeneousMixture<ThermoType>&) = delete;
+        void operator=(const bHomogeneousMixture&) = delete;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "BHomogeneousMixture.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

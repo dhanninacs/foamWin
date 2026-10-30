@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2023-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,21 +22,27 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::MulticomponentThermo
+    Foam::multicomponentThermo
 
 Description
-    Multi-component thermo implementation
+    Base-class for multi-component thermodynamic properties.
+
+See also
+    Foam::basicThermo
 
 SourceFiles
-    MulticomponentThermo.C
+    multicomponentThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef MulticomponentThermo_H
-#define MulticomponentThermo_H
+#ifndef multicomponentThermo_H
+#define multicomponentThermo_H
 
-#include "BasicThermo.H"
+#include "basicThermo.H"
+#include "MulticomponentThermo.H"
 #include "speciesTable.H"
+#include "DimensionedFieldListSlicer.H"
+#include "GeometricFieldListSlicer.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -44,64 +50,27 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                       Class MulticomponentThermo Declaration
+                     Class multicomponentThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class BaseThermo>
-class MulticomponentThermo
+class multicomponentThermo
 :
-    public BaseThermo
+    virtual public basicThermo
 {
-protected:
-
-    // Protected Member Functions
-
-        //- Return a volScalarField of the given property
-        template<class Method, class ... Args>
-        tmp<volScalarField> volScalarFieldPropertyi
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Method psiMethod,
-            const label speciei,
-            const Args& ... args
-        ) const;
-
-        //- Return a volScalarField::Internal of the given property
-        template<class Method, class ... Args>
-        tmp<volScalarField::Internal> volInternalScalarFieldPropertyi
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Method psiMethod,
-            const label speciei,
-            const Args& ... args
-        ) const;
-
-        //- Return a scalarField of the given property
-        template<class Method, class Arg, class ... Args>
-        tmp<scalarField> scalarFieldPropertyi
-        (
-            Method psiMethod,
-            const label speciei,
-            const Arg& arg,
-            const Args& ... args
-        ) const;
-
-
 public:
 
-    // Constructors
+    //- Runtime type information
+    TypeName("multicomponentThermo");
 
-        //- Construct from mesh and phase name
-        MulticomponentThermo(const fvMesh&, const word& phaseName);
 
-        //- Disallow default bitwise copy construction
-        MulticomponentThermo(const MulticomponentThermo<BaseThermo>&) = delete;
+    // Public Classes
+
+        //- Forward declare the implementation class
+        class implementation;
 
 
     //- Destructor
-    virtual ~MulticomponentThermo();
+    virtual ~multicomponentThermo();
 
 
     // Member Functions
@@ -109,34 +78,69 @@ public:
         // Species set
 
             //- Return the table of species
-            virtual const speciesTable& species() const
-            {
-                return BaseThermo::mixtureType::species();
-            }
+            virtual const speciesTable& species() const = 0;
+
+            //- Does the mixture include this specie?
+            inline bool containsSpecie(const word& specieName) const;
+
+            //- The index of the default specie
+            virtual label defaultSpecie() const = 0;
+
+
+        // Active/Inactive handling
+
+            //- Access the specie active flags
+            virtual const boolList& speciesActive() const = 0;
+
+            //- Synchronise the specie active flags
+            virtual void syncSpeciesActive() const = 0;
+
+            //- Set specie active
+            inline void setSpecieActive(const label speciei) const;
+
+            //- Set specie inactive
+            inline void setSpecieInactive(const label speciei) const;
+
+            //- Should the given specie be solved for? I.e., is it active and
+            //  not the default specie?
+            inline bool solveSpecie(const label speciei) const;
+
+
+        // Mass fractions
+
+            //- Access the mass-fraction fields
+            virtual PtrList<volScalarField>& Y() = 0;
+
+            //- Access the mass-fraction fields
+            virtual const PtrList<volScalarField>& Y() const = 0;
+
+            //- Access the mass-fraction field for a specie given by index
+            inline volScalarField& Y(const label speciei);
+
+            //- Access the mass-fraction field for a specie given by index
+            inline const volScalarField& Y(const label speciei) const;
+
+            //- Access the mass-fraction field for a specie given by name
+            inline volScalarField& Y(const word& specieName);
+
+            //- Access the mass-fraction field for a specie given by name
+            inline const volScalarField& Y(const word& specieName) const;
+
+            //- Access the specie index of the given mass-fraction field
+            inline label specieIndex(const volScalarField& Yi) const;
+
+            //- Normalise the mass fractions by clipping positive and deriving
+            //  the default specie mass fraction from the other species.
+            virtual void normaliseY() = 0;
 
 
         // Specie molecular properties
 
             //- Molecular weight [kg/kmol]
-            virtual scalar WiValue(const label speciei) const;
+            virtual scalar WiValue(const label speciei) const = 0;
 
             //- Molecular weight [kg/kmol]
-            virtual dimensionedScalar Wi(const label speciei) const;
-
-
-        // Specie active list
-
-            //- Access the specie active flags
-            virtual const boolList& speciesActive() const
-            {
-                return BaseThermo::mixtureType::speciesActive();
-            }
-
-            //- Access the specie active flags
-            virtual boolList& speciesActive()
-            {
-                return BaseThermo::mixtureType::speciesActive();
-            }
+            virtual dimensionedScalar Wi(const label speciei) const = 0;
 
 
         // Specie thermodynamic properties
@@ -147,7 +151,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Density [kg/m^3]
             virtual tmp<volScalarField> rhoi
@@ -155,7 +159,7 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Heat capacity at constant pressure [J/kg/K]
             virtual scalar Cpi
@@ -163,7 +167,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Heat capacity at constant pressure [J/kg/K]
             virtual tmp<volScalarField> Cpi
@@ -171,7 +175,7 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy [J/kg]
             virtual scalar hei
@@ -179,7 +183,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy [J/kg]
             virtual tmp<scalarField> hei
@@ -187,7 +191,7 @@ public:
                 const label speciei,
                 const scalarField& p,
                 const scalarField& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy [J/kg]
             virtual tmp<volScalarField::Internal> hei
@@ -195,7 +199,7 @@ public:
                 const label speciei,
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy [J/kg]
             virtual tmp<volScalarField> hei
@@ -203,7 +207,7 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy [J/kg]
             virtual scalar hsi
@@ -211,7 +215,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy [J/kg]
             virtual tmp<scalarField> hsi
@@ -219,7 +223,7 @@ public:
                 const label speciei,
                 const scalarField& p,
                 const scalarField& T
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy [J/kg]
             virtual tmp<volScalarField::Internal> hsi
@@ -227,7 +231,7 @@ public:
                 const label speciei,
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy [J/kg]
             virtual tmp<volScalarField> hsi
@@ -235,7 +239,7 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy [J/kg]
             virtual scalar hai
@@ -243,7 +247,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy [J/kg]
             virtual tmp<scalarField> hai
@@ -251,7 +255,7 @@ public:
                 const label speciei,
                 const scalarField& p,
                 const scalarField& T
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy [J/kg]
             virtual tmp<volScalarField::Internal> hai
@@ -259,7 +263,7 @@ public:
                 const label speciei,
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy [J/kg]
             virtual tmp<volScalarField> hai
@@ -267,13 +271,13 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy of formation [J/kg]
-            virtual scalar hfiValue(const label speciei) const;
+            virtual scalar hfiValue(const label speciei) const = 0;
 
             //- Enthalpy of formation [J/kg]
-            virtual dimensionedScalar hfi(const label speciei) const;
+            virtual dimensionedScalar hfi(const label speciei) const = 0;
 
 
         // Specie transport properties
@@ -284,7 +288,7 @@ public:
                 const label speciei,
                 const scalar p,
                 const scalar T
-            ) const;
+            ) const = 0;
 
             //- Thermal conductivity [W/m/K]
             virtual tmp<volScalarField> kappai
@@ -292,7 +296,128 @@ public:
                 const label speciei,
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
+};
+
+
+/*---------------------------------------------------------------------------*\
+              Class multicomponentThermo::implementation Declaration
+\*---------------------------------------------------------------------------*/
+
+class multicomponentThermo::implementation
+:
+    virtual public multicomponentThermo
+{
+protected:
+
+    // Protected data
+
+        //- The name of the default specie. The mass fraction of which is
+        //  derived from the other species rather than solved. Also used as the
+        //  carrier specie in multicomponent diffusion.
+        word defaultSpecieName_;
+
+        //- The index of the default specie
+        label defaultSpeciei_;
+
+        //- Species mass fractions
+        PtrList<volScalarField> Y_;
+
+        mutable tmp<volScalarField> Ydefault_;
+
+
+    // Protected Member Functions
+
+        //- Scale the mass fractions to sum to 1
+        void correctMassFractions
+        (
+            const speciesTable& species
+        );
+
+
+public:
+
+    // Constructors
+
+        //- Construct from dictionary, specie names, mesh and phase name
+        implementation
+        (
+            const dictionary&,
+            const speciesTable&,
+            const fvMesh&,
+            const word&,
+            const bool requiresDefaultSpecie = true
+        );
+
+
+    //- Destructor
+    virtual ~implementation();
+
+
+    // Member Functions
+
+        //- The index of the default specie
+        virtual label defaultSpecie() const;
+
+        //- Synchronise the specie active flags
+        virtual void syncSpeciesActive() const;
+
+        //- Access the mass-fraction fields
+        virtual PtrList<volScalarField>& Y();
+
+        //- Access the mass-fraction fields
+        virtual const PtrList<volScalarField>& Y() const;
+
+        //- Normalise the mass fractions by clipping positive and deriving
+        //  the default specie mass fraction from the other species.
+        virtual void normaliseY();
+
+        //- Get the slicer
+        inline GeometricFieldListSlicer<scalar> Yslicer() const;
+
+        //- Get the composition of an internal cell
+        inline scalarFieldListSlice cellComposition
+        (
+            const GeometricFieldListSlicer<scalar>& Yslicer,
+            const label celli
+        ) const;
+
+        //- Get the composition of a boundary face
+        inline scalarFieldListSlice patchFaceComposition
+        (
+            const GeometricFieldListSlicer<scalar>& Yslicer,
+            const label patchi,
+            const label facei
+        ) const;
+
+        //- Get the slicer for the given source
+        inline DimensionedFieldListAndSlicer<scalar, fvMesh> Yslicer
+        (
+            const fvSource& model,
+            const volScalarField::Internal& source
+        ) const;
+
+        //- Get the composition of a source cell
+        inline scalarFieldListSlice sourceCellComposition
+        (
+            const DimensionedFieldListAndSlicer<scalar, fvMesh>& Yslicer,
+            const label celli
+        ) const;
+
+        //- Get the slicer for the given source
+        inline PtrList<scalarField> Yslicer
+        (
+            const fvSource& model,
+            const scalarField& source,
+            const labelUList& cells
+        ) const;
+
+        //- Get the composition of a source cell
+        inline scalarFieldListSlice sourceCellComposition
+        (
+            const PtrList<scalarField>& Yslicer,
+            const label i
+        ) const;
 };
 
 
@@ -300,11 +425,9 @@ public:
 
 } // End namespace Foam
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#ifdef NoRepository
-    #include "MulticomponentThermo.C"
-#endif
+#include "multicomponentThermoI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -22,23 +22,23 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::DiagonalPreconditioner
+    Foam::diagonalPreconditioner
 
 Description
     Diagonal preconditioner for both symmetric and asymmetric matrices.
 
-    The inverse (reciprocal for scalar) of the diagonal is calculated and
-    stored.
+    The reciprocal of the diagonal is calculated and stored for reuse
+    because on most systems '*' is faster than '/'.
 
 SourceFiles
-    DiagonalPreconditioner.C
+    diagonalPreconditioner.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef DiagonalPreconditioner_H
-#define DiagonalPreconditioner_H
+#ifndef diagonalPreconditioner_H
+#define diagonalPreconditioner_H
 
-#include "LduMatrix.H"
+#include "lduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,18 +46,17 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                   Class DiagonalPreconditioner Declaration
+                   Class diagonalPreconditioner Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class Type, class DType, class LUType>
-class DiagonalPreconditioner
+class diagonalPreconditioner
 :
-    public LduMatrix<Type, DType, LUType>::preconditioner
+    public lduMatrix::preconditioner
 {
     // Private Data
 
-        //- The inverse (reciprocal for scalar) diagonal
-        Field<DType> rD;
+        //- The reciprocal diagonal
+        scalarField rD;
 
 
 public:
@@ -68,64 +67,54 @@ public:
 
     // Constructors
 
-        //- Construct from matrix components and preconditioner data dictionary
-        DiagonalPreconditioner
+        //- Construct from matrix components and preconditioner solver controls
+        diagonalPreconditioner
         (
-            const typename LduMatrix<Type, DType, LUType>::solver& sol,
-            const dictionary& preconditionerDict
+            const lduMatrix::solver&,
+            const dictionary& solverControlsUnused
         );
 
         //- Disallow default bitwise copy construction
-        DiagonalPreconditioner(const DiagonalPreconditioner&) = delete;
+        diagonalPreconditioner(const diagonalPreconditioner&) = delete;
 
 
-    // Destructor
-
-        virtual ~DiagonalPreconditioner()
-        {}
+    //- Destructor
+    virtual ~diagonalPreconditioner()
+    {}
 
 
     // Member Functions
 
-        //- Read and reset the preconditioner parameters from the given
-        //  dictionary
-        virtual void read(const dictionary& preconditionerDict);
-
         //- Return wA the preconditioned form of residual rA
         virtual void precondition
         (
-            Field<Type>& wA,
-            const Field<Type>& rA
+            scalarField& wA,
+            const scalarField& rA,
+            const direction cmpt=0
         ) const;
 
-        //- Return wT the transpose-matrix preconditioned form of
-        //  residual rT.
+        //- Return wT the transpose-matrix preconditioned form of residual rT.
         virtual void preconditionT
         (
-            Field<Type>& wT,
-            const Field<Type>& rT
+            scalarField& wT,
+            const scalarField& rT,
+            const direction cmpt=0
         ) const
         {
-            return(precondition(wT, rT));
+            return precondition(wT, rT, cmpt);
         }
 
 
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const DiagonalPreconditioner&) = delete;
+        void operator=(const diagonalPreconditioner&) = delete;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "DiagonalPreconditioner.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

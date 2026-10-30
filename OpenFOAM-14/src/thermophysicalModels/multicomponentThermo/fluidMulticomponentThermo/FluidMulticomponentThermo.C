@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2023 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2020-2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,62 +23,34 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "FluidMulticomponentThermo.H"
-#include "fvMesh.H"
+#include "fluidMulticomponentThermo.H"
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::FluidMulticomponentThermo<BaseThermo>::FluidMulticomponentThermo
+namespace Foam
+{
+    defineTypeNameAndDebug(fluidMulticomponentThermo, 0);
+    defineRunTimeSelectionTable(fluidMulticomponentThermo, fvMesh);
+}
+
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::fluidMulticomponentThermo>
+Foam::fluidMulticomponentThermo::New
 (
     const fvMesh& mesh,
     const word& phaseName
 )
-:
-    BaseThermo(mesh, phaseName)
-{}
+{
+    return basicThermo::New<fluidMulticomponentThermo>(mesh, phaseName);
+}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-template<class BaseThermo>
-Foam::FluidMulticomponentThermo<BaseThermo>::~FluidMulticomponentThermo()
+Foam::fluidMulticomponentThermo::~fluidMulticomponentThermo()
 {}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class BaseThermo>
-Foam::scalar Foam::FluidMulticomponentThermo<BaseThermo>::mui
-(
-    const label speciei,
-    const scalar p,
-    const scalar T
-) const
-{
-    return this->specieThermo(speciei).mu(p, T);
-}
-
-
-template<class BaseThermo>
-Foam::tmp<Foam::volScalarField>
-Foam::FluidMulticomponentThermo<BaseThermo>::mui
-(
-    const label speciei,
-    const volScalarField& p,
-    const volScalarField& T
-) const
-{
-    return this->volScalarFieldPropertyi
-    (
-        "mu",
-        dimMass/dimLength/dimTime,
-        &BaseThermo::mixtureType::thermoType::mu,
-        speciei,
-        p,
-        T
-    );
-}
 
 
 // ************************************************************************* //

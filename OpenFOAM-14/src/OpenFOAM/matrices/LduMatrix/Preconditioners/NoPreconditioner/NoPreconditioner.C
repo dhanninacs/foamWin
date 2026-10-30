@@ -23,36 +23,54 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "NoPreconditioner.H"
+#include "noPreconditioner.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(noPreconditioner, 0);
+
+    lduMatrix::preconditioner::
+        addsymMatrixConstructorToTable<noPreconditioner>
+        addnoPreconditionerSymMatrixConstructorToTable_;
+
+    lduMatrix::preconditioner::
+        addasymMatrixConstructorToTable<noPreconditioner>
+        addnoPreconditionerAsymMatrixConstructorToTable_;
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class Type, class DType, class LUType>
-Foam::NoPreconditioner<Type, DType, LUType>::NoPreconditioner
+Foam::noPreconditioner::noPreconditioner
 (
-    const typename LduMatrix<Type, DType, LUType>::solver& sol,
+    const lduMatrix::solver& sol,
     const dictionary&
 )
 :
-    LduMatrix<Type, DType, LUType>::preconditioner(sol)
+    lduMatrix::preconditioner(sol)
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class Type, class DType, class LUType>
-void Foam::NoPreconditioner<Type, DType, LUType>::read(const dictionary&)
-{}
-
-
-template<class Type, class DType, class LUType>
-void Foam::NoPreconditioner<Type, DType, LUType>::precondition
+void Foam::noPreconditioner::precondition
 (
-    Field<Type>& wA,
-    const Field<Type>& rA
+    scalarField& wA,
+    const scalarField& rA,
+    const direction
 ) const
 {
-    wA = rA;
+    scalar* __restrict__ wAPtr = wA.begin();
+    const scalar* __restrict__ rAPtr = rA.begin();
+
+    label nCells = wA.size();
+
+    for (label cell=0; cell<nCells; cell++)
+    {
+        wAPtr[cell] = rAPtr[cell];
+    }
 }
 
 

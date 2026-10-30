@@ -22,24 +22,22 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::UHomogeneousMixture
-
-Description
-    Templated unburnt gas mixture for homogeneous lean, stoichiometric or rich
-    conditions
-
-See also
     Foam::uHomogeneousMixture
 
+Description
+    Unburnt gas mixture for homogeneous lean, stoichiometric or rich conditions
+
 SourceFiles
-    UHomogeneousMixture.C
+    uHomogeneousMixture.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef UHomogeneousMixture_H
-#define UHomogeneousMixture_H
+#ifndef uHomogeneousMixture_H
+#define uHomogeneousMixture_H
 
-#include "uHomogeneousMixture.H"
+#include "uMixture.H"
+#include "speciesTable.H"
+#include "FieldListSlice.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,88 +45,73 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                     Class UHomogeneousMixture Declaration
+                     Class uHomogeneousMixture Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class ThermoType>
-class UHomogeneousMixture
+class uHomogeneousMixture
 :
-    public uHomogeneousMixture
+    public uMixture
 {
-public:
+protected:
 
-    // Public Typedefs
+    // Protected Data
 
-        //- The type of thermodynamics this mixture is instantiated for
-        typedef ThermoType thermoType;
-
-        //- Mixing type for thermodynamic properties
-        typedef ThermoType thermoMixtureType;
-
-        //- Mixing type for transport properties
-        typedef ThermoType transportMixtureType;
-
-
-private:
-
-    // Private Data
-
-        //- Reactant thermodynamic model
-        thermoType reactants_;
+        //- Return the fuel-oxidant equivalence ratio
+        scalar Phi_;
 
 
 public:
+
+    //- Runtime type information
+    ClassName("uHomogeneous");
+
 
     // Constructors
 
         //- Construct from a dictionary
-        UHomogeneousMixture(const dictionary&);
+        uHomogeneousMixture(const dictionary&);
 
         //- Disallow default bitwise copy construction
-        UHomogeneousMixture(const UHomogeneousMixture<ThermoType>&) = delete;
+        uHomogeneousMixture(const uHomogeneousMixture&) = delete;
+
+
+    //- Destructor
+    virtual ~uHomogeneousMixture()
+    {}
 
 
     // Member Functions
 
-        //- Return the instantiated type name
-        static word typeName()
+        //- Return the mixture type name
+        virtual const word& mixtureType() const
         {
-            return
-                uHomogeneousMixture::typeName
-              + '<' + ThermoType::typeName() + '>';
+            return typeName;
         }
 
-        inline const ThermoType& specieThermo(const label speciei) const
+        //- Return the table of species
+        const speciesTable& species() const
         {
-            return reactants_;
+            return speciesTable::null;
         }
 
-        //- Return the mixture for thermodynamic properties
-        const thermoMixtureType& thermoMixture
-        (
-            const scalarFieldListSlice&
-        ) const
+        //- Access the specie active flags
+        const boolList& speciesActive() const
         {
-            return reactants_;
+            NotImplemented;
+            return boolList::null();
         }
 
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&
-        ) const
+        //- Access the specie active flags
+        boolList& speciesActive()
         {
-            return reactants_;
+            NotImplemented;
+            return const_cast<boolList&>(boolList::null());
         }
 
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&,
-            const thermoMixtureType&
-        ) const
+        //- Return the fuel-oxidant equivalence ratio
+        scalar Phi(const scalarFieldListSlice& Yu) const
         {
-            return reactants_;
+            return Phi_;
         }
 
         //- Read dictionary
@@ -138,19 +121,13 @@ public:
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const UHomogeneousMixture<ThermoType>&) = delete;
+        void operator=(const uHomogeneousMixture&) = delete;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "UHomogeneousMixture.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

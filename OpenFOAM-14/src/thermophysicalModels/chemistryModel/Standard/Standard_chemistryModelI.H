@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2016-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,56 +23,85 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "OSspecific.H"
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class ThermoType>
-inline const Foam::multicomponentMixture<ThermoType>&
-Foam::chemistryModels::Standard<ThermoType>::mixture() const
+inline Foam::autoPtr<Foam::OFstream>
+Foam::chemistryModels::standard::logFile(const word& name) const
 {
-    return mixture_;
+    mkDir(this->mesh().time().path()/"TDAC"/this->group());
+    return autoPtr<OFstream>
+    (
+        new OFstream
+        (
+            this->mesh().time().path()/"TDAC"/this->group()/name
+        )
+    );
 }
 
 
-template<class ThermoType>
-inline const Foam::PtrList<Foam::Reaction<ThermoType>>&
-Foam::chemistryModels::Standard<ThermoType>::reactions() const
+inline Foam::label Foam::chemistryModels::standard::nSpecie() const
 {
-    return reactions_;
+    return nSpecie_;
 }
 
 
-template<class ThermoType>
-inline const Foam::PtrList<ThermoType>&
-Foam::chemistryModels::Standard<ThermoType>::specieThermos() const
+inline void Foam::chemistryModels::standard::setNSpecie(const label newNs)
 {
-    return specieThermos_;
+    nSpecie_ = newNs;
 }
 
 
-template<class ThermoType>
-inline Foam::label
-Foam::chemistryModels::Standard<ThermoType>::nReaction() const
+inline Foam::label Foam::chemistryModels::standard::nEqns() const
 {
-    return reactions_.size();
+    // nEqns = number of species + temperature + pressure
+    return nSpecie_ + 2;
 }
 
 
-template<class ThermoType>
-inline const Foam::word&
-Foam::chemistryModels::Standard<ThermoType>::reactionName
+inline const Foam::PtrList<Foam::volScalarField>&
+Foam::chemistryModels::standard::Y() const
+{
+    return Yvf_;
+}
+
+
+inline bool Foam::chemistryModels::standard::reduction() const
+{
+    return reduction_;
+}
+
+
+inline Foam::label Foam::chemistryModels::standard::sToc
 (
-    const label reactioni
+    const label si
 ) const
 {
-    return reactions_[reactioni].name();
+    if (reduction_)
+    {
+        return sToc_[si];
+    }
+    else
+    {
+        return si;
+    }
 }
 
 
-template<class ThermoType>
-inline const Foam::PtrList<Foam::DimensionedField<Foam::scalar, Foam::fvMesh>>&
-Foam::chemistryModels::Standard<ThermoType>::RR() const
+inline Foam::label Foam::chemistryModels::standard::cTos
+(
+    const label ci
+) const
 {
-    return RR_;
+    if (reduction_)
+    {
+        return cTos_[ci];
+    }
+    else
+    {
+        return ci;
+    }
 }
 
 

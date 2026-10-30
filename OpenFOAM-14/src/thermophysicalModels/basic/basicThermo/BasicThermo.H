@@ -22,24 +22,49 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::BasicThermo
+    Foam::basicThermo
 
 Description
-    Thermo implementation and storage of energy and heat capacities. Provides
-    overloads of the functions defined in the basic thermo type that depend on
-    the primitive thermo model.
+    Base-class for fluid and solid thermodynamic properties.
+
+    The basicThermo class is the pure virtual interface, plus static data and
+    functions, including the selection table. It is default-constructable and
+    holds no non-static data.
+
+    The basicThermo::implementation class contains the class data, non-default
+    construction and other implementation details.
+
+    This structure allows for arbitrary mixing of the interfaces. Derived
+    levels should implement a similar separation of interface and
+    implementation. All interface classes should be default-constructable, and
+    should be inherited virtually into whatever interfaces are required.
+    Implementation classes should virtually inherit from their corresponding
+    interface class and *not* a lower level implementation class.
+
+    In derived levels that are complete enough to act as the base of a
+    thermodynamic instantiation, an additional *::composite sub class should be
+    defined, which (non-virtually) inherits from all the *::implementation
+    classes that it needs. This way, the composite class composes an interface
+    for which diamond patterns are resolved by virtual inheritance, whilst also
+    obtaining a single copy of all the implementation classes it needs to form
+    a complete implementation. The use of virtual inheritance does not result
+    in additional constructor calls propagating further down the hierarchy
+    (into BasicThermo and similar) because all virtually inherited interface
+    classes are default constructable.
 
 SourceFiles
-    BasicThermo.C
+    basicThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef BasicThermo_H
-#define BasicThermo_H
+#ifndef basicThermo_H
+#define basicThermo_H
 
 #include "volFields.H"
+#include "typeInfo.H"
 #include "physicalProperties.H"
-#include "uniformGeometricFields.H"
+#include "autoPtr.H"
+#include "wordIOList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,245 +72,237 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                       Class BasicThermoName Declaration
+                         Class basicThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-TemplateName(BasicThermo);
-
-
-/*---------------------------------------------------------------------------*\
-                          Class BasicThermo Declaration
-\*---------------------------------------------------------------------------*/
-
-template<class MixtureType, class BasicThermoType>
-class BasicThermo
-:
-    public BasicThermoName,
-    public physicalProperties,
-    public MixtureType,
-    public BasicThermoType
+class basicThermo
 {
+    // Private Static Member Functions
+
+        // Convert multiComponent -> multicomponent for backward-compatibility
+        static word mixtureName(const Foam::dictionary& thermoTypeDict);
+
+        //- Get the constructor iterator for the given thermo dictionary and
+        //  entries and constructor iterator table
+        template<class Thermo, class Table>
+        static typename Table::iterator lookupCstrIter
+        (
+            const dictionary& thermoTypeDict,
+            Table* tablePtr,
+            const int nCmpt,
+            const char* cmptNames[],
+            const word& thermoTypeName
+        );
+
+
 protected:
 
-    // Protected data
+    // Protected Static Member Functions
 
-        //- Energy field
-        volScalarField he_;
-
-        //- Heat capacity at constant pressure field [J/kg/K]
-        volScalarField Cp_;
-
-        // Heat capacity at constant volume field [J/kg/K]
-        volScalarField Cv_;
+        //- Lookup and the named field, or construct it as MUST-READ if it is
+        //  not found, and return a reference
+        static volScalarField& lookupOrConstruct
+        (
+            const fvMesh& mesh,
+            const char* name
+        );
 
 
     // Protected Member Functions
 
-        //- Return a volScalarField of the given property
-        template<class Mixture, class Method, class ... Args>
-        tmp<volScalarField> volScalarFieldProperty
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Mixture mixture,
-            Method psiMethod,
-            const Args& ... args
-        ) const;
+        //- Enthalpy/internal energy field boundary types
+        //  by interrogating the temperature field boundary types
+        wordList heBoundaryTypes();
 
-        //- Return a volScalarField of the given property of the mixture
-        template<class Method, class ... Args>
-        tmp<volScalarField> volScalarFieldMixtureProperty
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Method mixtureMethod,
-            const Args& ... args
-        ) const;
+        //- Enthalpy/internal energy field boundary base types
+        //  by interrogating the temperature field boundary types
+        wordList heBoundaryBaseTypes();
 
-        //- Return a volScalarField::Internal of the given property
-        template<class Mixture, class Method, class ... Args>
-        tmp<volScalarField::Internal> volInternalScalarFieldProperty
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Mixture mixture,
-            Method psiMethod,
-            const Args& ... args
-        ) const;
-
-        //- Return a scalarField of the given property on a cell set
-        template<class Mixture, class Method, class ... Args>
-        tmp<scalarField> cellSetProperty
-        (
-            Mixture mixture,
-            Method psiMethod,
-            const labelList& cells,
-            const Args& ... args
-        ) const;
-
-        //- Return a scalarField of the given property on a patch
-        template<class Mixture, class Method, class ... Args>
-        tmp<scalarField> patchFieldProperty
-        (
-            Mixture mixture,
-            Method psiMethod,
-            const label patchi,
-            const Args& ... args
-        ) const;
-
-        //- Return a scalarField of the given property for a source
-        template<class Mixture, class Method, class ... Args>
-        tmp<volScalarField::Internal> fieldSourceProperty
-        (
-            const word& psiName,
-            const dimensionSet& psiDim,
-            Mixture mixture,
-            Method psiMethod,
-            const fvSource& model,
-            const volScalarField::Internal& source,
-            const Args& ... args
-        ) const;
-
-        //- Return a scalarField of the given property for a source
-        template<class Mixture, class Method, class ... Args>
-        tmp<scalarField> fieldSourceProperty
-        (
-            Mixture mixture,
-            Method psiMethod,
-            const fvSource& model,
-            const scalarField& source,
-            const labelUList& cells,
-            const Args& ... args
-        ) const;
-
-        //- Return an indirect list of a field for the given set of cells
-        static UIndirectList<scalar> cellSetScalarList
-        (
-            const volScalarField& psi,
-            const labelUList& cells
-        );
-
-        //- Return an indirect list of a field for the given set of cells
-        static UniformField<scalar> cellSetScalarList
-        (
-            const uniformGeometricScalarField& psi,
-            const labelUList&
-        );
-
-        //- Correct the enthalpy/internal energy field boundaries
-        void heBoundaryCorrection(volScalarField& he);
+        //- Enthalpy/internal energy field sources types
+        //  by interrogating the temperature field sources types
+        HashTable<word> heSourcesTypes();
 
 
 public:
 
-    // Typedefs
+    // Public Classes
 
-        //- Mixture type
-        typedef MixtureType mixtureType;
-
-        //- Basic thermo
-        typedef BasicThermoType basicThermoType;
+        //- Forward declare the implementation class
+        class implementation;
 
 
-    //- Disambiguate debug switch used by derivations
-    using BasicThermoName::debug;
+    //- Runtime type information
+    TypeName("basicThermo");
 
 
-    // Constructors
+    //- Declare run-time constructor selection table
+    declareRunTimeSelectionTable
+    (
+        autoPtr,
+        basicThermo,
+        fvMesh,
+        (const fvMesh& mesh, const word& phaseName),
+        (mesh, phaseName)
+    );
 
-        //- Construct from mesh and phase name
-        BasicThermo(const fvMesh&, const word& phaseName);
 
-        //- Disallow default bitwise copy construction
-        BasicThermo(const BasicThermo<MixtureType, BasicThermoType>&) = delete;
+    // Static Member Functions
+
+        //- Name of a property for a given phase
+        static word phasePropertyName(const word& name, const word& phaseName)
+        {
+            return IOobject::groupName(name, phaseName);
+        }
+
+        //- Get the constructor iterator for the given thermo dictionary and
+        //  constructor iterator table
+        template<class Thermo, class Table>
+        static typename Table::iterator lookupCstrIter
+        (
+            const dictionary& thermoDict,
+            Table* tablePtr
+        );
+
+        //- Lookup the thermo associated with the given field
+        template<class FieldType>
+        static const basicThermo& lookupThermo(const FieldType& f);
+
+        //- Split name of thermo package into a list of the components names
+        static wordList splitThermoName
+        (
+            const word& thermoName,
+            const int nCmpt
+        );
+
+        //- Split name of thermo package into a list of named components names
+        static List<Pair<word>> thermoNameComponents
+        (
+            const word& thermoName
+        );
+
+
+    // Selectors
+
+        //- Generic New for each of the related thermodynamics packages
+        template<class Thermo>
+        static autoPtr<Thermo> New
+        (
+            const fvMesh&,
+            const word& phaseName=word::null
+        );
+
+        //- Specialisation of the Generic New for basicThermo
+        static autoPtr<basicThermo> New
+        (
+            const fvMesh&,
+            const word& phaseName=word::null
+        );
 
 
     //- Destructor
-    virtual ~BasicThermo();
+    virtual ~basicThermo();
 
 
     // Member Functions
 
-        //- Return the properties dictionary
-        virtual IOdictionary& properties()
+        //- Properties dictionary
+        virtual const IOdictionary& properties() const = 0;
+
+        //- Non-const access the properties dictionary
+        virtual IOdictionary& properties() = 0;
+
+        //- Return const access to the mesh
+        virtual const fvMesh& mesh() const = 0;
+
+        //- Phase name
+        virtual const word& phaseName() const = 0;
+
+        //- Name of a property for a given phase
+        word phasePropertyName(const word& name) const
         {
-            return *this;
+            return phasePropertyName(name, phaseName());
         }
 
-        //- Return the properties dictionary
-        virtual const IOdictionary& properties() const
-        {
-            return *this;
-        }
+        //- Check that the thermodynamics package is consistent
+        //  with energy forms supported by the application
+        void validate
+        (
+            const string& app,
+            const word&
+        ) const;
 
-        //- Return the name of the mixture
-        virtual word mixtureName() const
-        {
-            return mixtureType::typeName();
-        }
+        //- Check that the thermodynamics package is consistent
+        //  with energy forms supported by the application
+        void validate
+        (
+            const string& app,
+            const word&,
+            const word&
+        ) const;
 
-        //- Return the name of the thermo physics
-        virtual word thermoName() const
-        {
-            return MixtureType::thermoType::typeName();
-        }
+        //- Update properties
+        virtual void correct() = 0;
+
+        //- Name of the mixture
+        virtual word mixtureName() const = 0;
+
+        //- Name of the thermo physics
+        virtual word thermoName() const = 0;
 
         //- Return true if the equation of state is incompressible
         //  i.e. rho != f(p)
-        virtual bool incompressible() const
-        {
-            return MixtureType::thermoType::incompressible;
-        }
+        virtual bool incompressible() const = 0;
 
         //- Return true if the equation of state is isochoric
         //  i.e. rho = const
-        virtual bool isochoric() const
-        {
-            return MixtureType::thermoType::isochoric;
-        }
+        virtual bool isochoric() const = 0;
+
+        //- Should the dpdt term be included in the enthalpy equation
+        virtual Switch dpdt() const = 0;
 
 
         // Molecular properties
 
             //- Molecular weight [kg/kmol]
-            virtual tmp<volScalarField> W() const;
+            virtual tmp<volScalarField> W() const = 0;
 
             //- Molecular weight for patch [kg/kmol]
-            virtual tmp<scalarField> W(const label patchi) const;
+            virtual tmp<scalarField> W(const label patchi) const = 0;
 
 
         // Thermodynamic state
 
+            //- Temperature [K]
+            virtual const volScalarField& T() const = 0;
+
+            //- Temperature [K]
+            //  Non-const access allowed for transport equations
+            virtual volScalarField& T() = 0;
+
             //- Enthalpy/Internal energy [J/kg]
-            virtual const volScalarField& he() const
-            {
-                return he_;
-            }
+            virtual const volScalarField& he() const = 0;
 
             //- Enthalpy/Internal energy [J/kg]
             //  Non-const access allowed for transport equations
-            virtual volScalarField& he()
-            {
-                return he_;
-            }
+            virtual volScalarField& he() = 0;
 
             //- Heat capacity at constant pressure [J/kg/K]
-            virtual const volScalarField& Cp() const
-            {
-                return Cp_;
-            }
+            virtual const volScalarField& Cp() const = 0;
 
             //- Heat capacity at constant volume [J/kg/K]
-            virtual const volScalarField& Cv() const
-            {
-                return Cv_;
-            }
+            virtual const volScalarField& Cv() const = 0;
 
             //- Heat capacity at constant pressure/volume [J/kg/K]
-            virtual const volScalarField& Cpv() const;
+            virtual const volScalarField& Cpv() const = 0;
 
 
         // Derived Thermodynamic Properties
+
+            //- Density [kg/m^3]
+            virtual tmp<volScalarField> rho() const = 0;
+
+            //- Density for patch [kg/m^3]
+            virtual tmp<scalarField> rho(const label patchi) const = 0;
 
             //- Enthalpy/Internal energy
             //  for given pressure and temperature [J/kg]
@@ -293,7 +310,7 @@ public:
             (
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy
             //  for given pressure and temperature [J/kg]
@@ -301,21 +318,21 @@ public:
             (
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy for cell-set [J/kg]
             virtual tmp<scalarField> he
             (
                 const scalarField& T,
                 const labelList& cells
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy for patch [J/kg]
             virtual tmp<scalarField> he
             (
                 const scalarField& T,
                 const label patchi
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy for source [J/kg]
             virtual tmp<volScalarField::Internal> he
@@ -323,7 +340,7 @@ public:
                 const volScalarField::Internal& T,
                 const fvSource& model,
                 const volScalarField::Internal& source
-            ) const;
+            ) const = 0;
 
             //- Enthalpy/Internal energy for source [J/kg]
             virtual tmp<scalarField> he
@@ -332,10 +349,10 @@ public:
                 const fvSource& model,
                 const scalarField& source,
                 const labelUList& cells
-            ) const;
+            ) const = 0;
 
-            //- Sensible enthalpy [J/kg/K]
-            virtual tmp<volScalarField> hs() const;
+            //- Sensible enthalpy [J/kg]
+            virtual tmp<volScalarField> hs() const = 0;
 
             //- Sensible enthalpy
             //  for given pressure and temperature [J/kg]
@@ -343,7 +360,7 @@ public:
             (
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy
             //  for given pressure and temperature [J/kg]
@@ -351,24 +368,24 @@ public:
             (
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
-
-            //- Sensible enthalpy for patch [J/kg/K]
-            virtual tmp<scalarField> hs
-            (
-                const scalarField& T,
-                const label patchi
-            ) const;
+            ) const = 0;
 
             //- Sensible enthalpy for cell-set [J/kg]
             virtual tmp<scalarField> hs
             (
                 const scalarField& T,
                 const labelList& cells
-            ) const;
+            ) const = 0;
 
-            //- Absolute enthalpy [J/kg/K]
-            virtual tmp<volScalarField> ha() const;
+            //- Sensible enthalpy for patch [J/kg]
+            virtual tmp<scalarField> hs
+            (
+                const scalarField& T,
+                const label patchi
+            ) const = 0;
+
+            //- Absolute enthalpy [J/kg]
+            virtual tmp<volScalarField> ha() const = 0;
 
             //- Absolute enthalpy
             //  for given pressure and temperature [J/kg]
@@ -376,7 +393,7 @@ public:
             (
                 const volScalarField& p,
                 const volScalarField& T
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy
             //  for given pressure and temperature [J/kg]
@@ -384,38 +401,48 @@ public:
             (
                 const volScalarField::Internal& p,
                 const volScalarField::Internal& T
-            ) const;
-
-            //- Absolute enthalpy for patch [J/kg/K]
-            virtual tmp<scalarField> ha
-            (
-                const scalarField& T,
-                const label patchi
-            ) const;
+            ) const = 0;
 
             //- Absolute enthalpy for cell-set [J/kg]
             virtual tmp<scalarField> ha
             (
                 const scalarField& T,
                 const labelList& cells
-            ) const;
+            ) const = 0;
+
+            //- Absolute enthalpy for patch [J/kg]
+            virtual tmp<scalarField> ha
+            (
+                const scalarField& T,
+                const label patchi
+            ) const = 0;
 
             //- Heat capacity at constant pressure for patch [J/kg/K]
             virtual tmp<scalarField> Cp
             (
                 const scalarField& T,
                 const label patchi
-            ) const;
+            ) const = 0;
 
             //- Heat capacity at constant volume for patch [J/kg/K]
             virtual tmp<scalarField> Cv
             (
                 const scalarField& T,
                 const label patchi
-            ) const;
+            ) const = 0;
 
             //- Heat capacity at constant pressure/volume for patch [J/kg/K]
             virtual tmp<scalarField> Cpv
+            (
+                const scalarField& T,
+                const label patchi
+            ) const = 0;
+
+            //- Gamma = Cp/Cv []
+            tmp<volScalarField> gamma() const;
+
+            //- Gamma = Cp/Cv for patch []
+            tmp<scalarField> gamma
             (
                 const scalarField& T,
                 const label patchi
@@ -430,30 +457,128 @@ public:
                 const volScalarField& h,
                 const volScalarField& p,
                 const volScalarField& T0    // starting temperature
-            ) const;
+            ) const = 0;
 
             //- Temperature from enthalpy/internal energy for cell-set
             virtual tmp<scalarField> The
             (
-                const scalarField& he,
+                const scalarField& h,
                 const scalarField& T0,      // starting temperature
                 const labelList& cells
-            ) const;
+            ) const = 0;
 
             //- Temperature from enthalpy/internal energy for patch
             virtual tmp<scalarField> The
             (
-                const scalarField& he,
+                const scalarField& h,
                 const scalarField& T0,      // starting temperature
                 const label patchi
-            ) const;
+            ) const = 0;
+
+
+        // Transport state
+
+            //- Thermal conductivity of mixture [W/m/K]
+            virtual const volScalarField& kappa() const = 0;
+};
+
+
+/*---------------------------------------------------------------------------*\
+                 Class basicThermo::implementation Declaration
+\*---------------------------------------------------------------------------*/
+
+class basicThermo::implementation
+:
+    virtual public basicThermo
+{
+    // Private Data
+
+        //- Reference to the mesh
+        const fvMesh& mesh_;
+
+
+protected:
+
+    // Protected data
+
+        //- Phase-name
+        const word& phaseName_;
+
+
+        // Fields
+
+            //- Temperature [K]
+            volScalarField T_;
+
+            //- Thermal conductivity [W/m/K]
+            volScalarField kappa_;
+
+
+        //- Should the dpdt term be included in the enthalpy equation
+        Switch dpdt_;
+
+
+public:
+
+    // Constructors
+
+        //- Construct from dictionary, mesh and phase name
+        implementation(const dictionary&, const fvMesh&, const word&);
+
+        //- Disallow default bitwise copy construction
+        implementation(const implementation&) = delete;
+
+
+
+    //- Destructor
+    virtual ~implementation();
+
+
+    // Member Functions
+
+        //- Return const access to the mesh
+        virtual const fvMesh& mesh() const
+        {
+            return mesh_;
+        }
+
+        //- Phase name
+        virtual const word& phaseName() const
+        {
+            return phaseName_;
+        }
+
+        //- Should the dpdt term be included in the enthalpy equation
+        virtual Switch dpdt() const
+        {
+            return dpdt_;
+        }
+
+
+        // Thermodynamic state
+
+            //- Temperature [K]
+            virtual const volScalarField& T() const;
+
+            //- Temperature [K]
+            //  Non-const access allowed for transport equations
+            virtual volScalarField& T();
+
+
+        // Transport state
+
+            //- Thermal conductivity of mixture [W/m/K]
+            virtual const volScalarField& kappa() const;
 
 
         //- Read thermophysical properties dictionary
-        using BasicThermoType::read;
+        virtual void read(const dictionary&);
 
-        //- Read thermophysical properties dictionary
-        virtual bool read();
+
+    // Member Operators
+
+        //- Disallow default bitwise assignment
+        void operator=(const implementation&) = delete;
 };
 
 
@@ -464,7 +589,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "BasicThermo.C"
+    #include "basicThermoTemplates.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

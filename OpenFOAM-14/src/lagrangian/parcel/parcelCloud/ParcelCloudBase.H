@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2020-2026 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2020-2023 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,117 +22,81 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::ParcelCloudBase
+    Foam::parcelCloudBase
 
 Description
-    Base template for parcel clouds. Inserts the parcelCloudBase virtualisation
-    layer into the class. Also defines default zero-return source methods to
-    enable the less functional clouds to be used in more complex situations.
+    Virtual abstract base class for parcel clouds. Inserted by ParcelCloudBase
+    into the base of the cloud template hierarchy and adds virtualisation of
+    most methods defined by the clouds.
+
+    Note that the "evolve" method is not virtualised here. Due to the way in
+    which TrackCloudType and trackingData templating work, it is not possible
+    to virtualise this method directly. Instead it has to be wrapped. That is
+    achieved by the parcelCloud and ParcelCloud classes.
+
+SourceFiles
+    parcelCloudBase.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef ParcelCloudBase_H
-#define ParcelCloudBase_H
+#ifndef parcelCloudBase_H
+#define parcelCloudBase_H
 
-#include "Cloud.H"
-#include "parcelCloudBase.H"
-#include "fvMatrices.H"
+#include "volFields.H"
+#include "fvMatricesFwd.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-class fluidThermo;
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-template<class ParticleType>
-class ParcelCloudBase
-:
-    public lagrangian::Cloud<ParticleType>,
-    virtual public parcelCloudBase
+class parcelCloudBase
 {
-protected:
-
-    // Protected data
-
-        //- Reference to the mesh
-        const fvMesh& mesh_;
-
-
 public:
+
+    //- Runtime type information
+    TypeName("parcelCloudBase");
+
 
     // Constructors
 
-        //- Construct given carrier fields
-        ParcelCloudBase
-        (
-            const word& cloudName,
-            const volScalarField& rho,
-            const volVectorField& U,
-            const volScalarField& mu,
-            const dimensionedVector& g,
-            const bool readFields = true
-        )
-        :
-            lagrangian::Cloud<ParticleType>(rho.mesh(), cloudName, false),
-            mesh_(rho.mesh())
-        {}
+        //- Null constructor
+        parcelCloudBase();
 
-        //- Construct given carrier fields and thermo
-        ParcelCloudBase
-        (
-            const word& cloudName,
-            const volScalarField& rho,
-            const volVectorField& U,
-            const dimensionedVector& g,
-            const fluidThermo& carrierThermo,
-            const bool readFields = true
-        )
-        :
-            lagrangian::Cloud<ParticleType>(rho.mesh(), cloudName, false),
-            mesh_(rho.mesh())
-        {}
+        //- Disallow default bitwise copy construction
+        parcelCloudBase(const parcelCloudBase&) = delete;
 
-        //- Copy constructor with new name
-        ParcelCloudBase
-        (
-            ParcelCloudBase<ParticleType>& c,
-            const word& name
-        )
-        :
-            lagrangian::Cloud<ParticleType>(c.mesh_, name, c),
-            mesh_(c.mesh_)
-        {}
 
-        //- Copy constructor with new name - creates bare cloud
-        ParcelCloudBase
-        (
-            const fvMesh& mesh,
-            const word& name,
-            const ParcelCloudBase<ParticleType>& c
-        )
-        :
-            lagrangian::Cloud<ParticleType>
-            (
-                mesh,
-                name,
-                IDLList<ParticleType>()
-            ),
-            mesh_(mesh)
-        {}
+    //- Destructor
+    virtual ~parcelCloudBase();
 
 
     // Member Functions
 
-        // Access
+        // Check
 
-            //- Return reference to the mesh
-            inline const fvMesh& mesh() const
-            {
-                return mesh_;
-            }
+            //-  Number of parcels
+            virtual label nParcels() const = 0;
+
+            //- Total mass in system
+            virtual scalar massInSystem() const = 0;
+
+
+        // Fields
+
+            //- Volume swept rate of parcels per cell
+            virtual const tmp<volScalarField> vDotSweep() const = 0;
+
+            //- Return the particle volume fraction field
+            virtual const tmp<volScalarField> alpha() const = 0;
+
+            //- Return the particle mass fraction field
+            virtual const tmp<volScalarField> Y() const = 0;
+
+            //- Return the particle effective density field
+            virtual const tmp<volScalarField> rhoEff() const = 0;
 
 
         // Sources
@@ -140,159 +104,71 @@ public:
             // Momentum
 
                 //- Return momentum source term [kg m/s^2]
-                tmp<fvVectorMatrix> SU(const volVectorField& U) const
-                {
-                    return tmp<fvVectorMatrix>
-                    (
-                        new fvVectorMatrix(U, dimensions::mass*dimAcceleration)
-                    );
-                }
+                virtual tmp<fvVectorMatrix> SU
+                (
+                    const volVectorField& U
+                ) const = 0;
 
                 //- Momentum transfer [kg m/s]
-                tmp<volVectorField::Internal> UTrans() const
-                {
-                    return volVectorField::Internal::New
-                    (
-                        this->name() + ":UTrans",
-                        this->mesh(),
-                        dimensionedVector(dimensions::mass*dimVelocity, Zero)
-                    );
-                }
+                virtual tmp<volVectorField::Internal> UTrans() const = 0;
 
                 //- Momentum transfer coefficient [kg]
-                tmp<volScalarField::Internal> UCoeff() const
-                {
-                    return volScalarField::Internal::New
-                    (
-                        this->name() + ":UCoeffs",
-                        this->mesh(),
-                        dimensionedScalar(dimensions::mass, Zero)
-                    );
-                }
+                virtual tmp<volScalarField::Internal> UCoeff() const = 0;
 
 
             // Energy
 
                 //- Return sensible enthalpy source term [J/s]
-                tmp<fvScalarMatrix> Sh(const volScalarField& hs) const
-                {
-                    return tmp<fvScalarMatrix>
-                    (
-                        new fvScalarMatrix(hs, dimEnergy/dimensions::time)
-                    );
-                }
+                virtual tmp<fvScalarMatrix> Sh
+                (
+                    const volScalarField& hs
+                ) const = 0;
 
                 //- Sensible enthalpy transfer [J]
-                tmp<volScalarField::Internal> hsTrans() const
-                {
-                    return volScalarField::Internal::New
-                    (
-                        this->name() + ":hsTrans",
-                        this->mesh(),
-                        dimensionedScalar(dimEnergy, Zero)
-                    );
-                }
+                virtual tmp<volScalarField::Internal> hsTrans() const = 0;
 
-                //- Sensible enthalpy transfer coefficient [J/T]
-                tmp<volScalarField::Internal> hsCoeff() const
-                {
-                    return volScalarField::Internal::New
-                    (
-                        this->name() + ":hsCoeffs",
-                        this->mesh(),
-                        dimensionedScalar(dimEnergy/dimTemperature, Zero)
-                    );
-                }
+                //- Sensible enthalpy transfer coefficient [J/K]
+                virtual tmp<volScalarField::Internal> hsCoeff() const = 0;
 
                 //- Return equivalent particulate emission [kg/m/s^3]
-                tmp<volScalarField> Ep() const
-                {
-                    return volScalarField::New
-                    (
-                        this->name() + ":radiation:Ep",
-                        this->mesh(),
-                        dimensionedScalar
-                        (
-                            dimensions::mass
-                           /dimensions::length
-                           /pow3(dimensions::time),
-                            Zero
-                        )
-                    );
-                }
+                virtual tmp<volScalarField> Ep() const = 0;
 
                 //- Return equivalent particulate absorption [1/m]
-                tmp<volScalarField> ap() const
-                {
-                    return volScalarField::New
-                    (
-                        this->name() + ":radiation:ap",
-                        this->mesh(),
-                        dimensionedScalar(dimless/dimensions::length, 0)
-                    );
-                }
+                virtual tmp<volScalarField> ap() const = 0;
 
                 //- Return equivalent particulate scattering factor [1/m]
-                tmp<volScalarField> sigmap() const
-                {
-                    return volScalarField::New
-                    (
-                        this->name() + ":radiation:sigmap",
-                        this->mesh(),
-                        dimensionedScalar(dimless/dimensions::length, 0)
-                    );
-                }
+                virtual tmp<volScalarField> sigmap() const = 0;
 
 
             // Mass
 
                 //- Return mass source term for specie [kg/s]
-                tmp<fvScalarMatrix> SYi
+                virtual tmp<fvScalarMatrix> SYi
                 (
                     const label i,
                     const volScalarField& Yi
-                ) const
-                {
-                    return tmp<fvScalarMatrix>
-                    (
-                        new fvScalarMatrix
-                        (
-                            Yi,
-                            dimensions::mass/dimensions::time
-                        )
-                    );
-                }
+                ) const = 0;
 
                 //- Return total mass source term [kg/s]
-                tmp<fvScalarMatrix> Srho(const volScalarField& rho) const
-                {
-                    return tmp<fvScalarMatrix>
-                    (
-                        new fvScalarMatrix
-                        (
-                            rho,
-                            dimensions::mass/dimensions::time
-                        )
-                    );
-                }
+                virtual tmp<fvScalarMatrix> Srho
+                (
+                    const volScalarField& rho
+                ) const = 0;
 
                 //- Return total mass source [kg/m^3/s]
-                tmp<volScalarField::Internal> Srho() const
-                {
-                    return tmp<volScalarField::Internal>
-                    (
-                        volScalarField::Internal::New
-                        (
-                            this->name() + ":Srho",
-                            this->mesh(),
-                            dimensionedScalar
-                            (
-                                dimensions::density/dimensions::time,
-                                Zero
-                            )
-                        )
-                    );
-                }
+                virtual tmp<volScalarField::Internal> Srho() const = 0;
+
+
+        // I-O
+
+            //- Print cloud information
+            virtual void info() = 0;
+
+
+    // Member Operators
+
+        //- Disallow default bitwise assignment
+        void operator=(const parcelCloudBase&) = delete;
 };
 
 

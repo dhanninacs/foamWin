@@ -23,23 +23,117 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "PatchIntersection.H"
+#include "patchIntersection.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-template<class SrcPatchType, class TgtPatchType>
-inline const SrcPatchType&
-Foam::PatchIntersection<SrcPatchType, TgtPatchType>::srcPatch() const
+inline const Foam::pointField& Foam::patchIntersection::points() const
 {
-    return srcPatch_;
+    return points_;
 }
 
 
-template<class SrcPatchType, class TgtPatchType>
-inline const TgtPatchType&
-Foam::PatchIntersection<SrcPatchType, TgtPatchType>::tgtPatch() const
+inline const Foam::labelList&
+Foam::patchIntersection::srcPointPoints() const
 {
-    return tgtPatch_;
+    return srcPointPoints_;
+}
+
+
+inline const Foam::labelList&
+Foam::patchIntersection::tgtPointPoints() const
+{
+    return tgtPointPoints_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointSrcPoints() const
+{
+    return pointSrcPoints_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointTgtPoints() const
+{
+    return pointTgtPoints_;
+}
+
+
+inline const Foam::List<Foam::DynamicList<Foam::label>>&
+Foam::patchIntersection::srcEdgePoints() const
+{
+    return srcEdgePoints_;
+}
+
+
+inline const Foam::List<Foam::DynamicList<Foam::label>>&
+Foam::patchIntersection::tgtEdgePoints() const
+{
+    return tgtEdgePoints_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointSrcEdges() const
+{
+    return pointSrcEdges_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointTgtEdges() const
+{
+    return pointTgtEdges_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointSrcFaces() const
+{
+    return pointSrcFaces_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::pointTgtFaces() const
+{
+    return pointTgtFaces_;
+}
+
+
+inline const Foam::faceList& Foam::patchIntersection::faces() const
+{
+    return faces_;
+}
+
+
+inline const Foam::List<Foam::DynamicList<Foam::label>>&
+Foam::patchIntersection::srcFaceFaces() const
+{
+    return srcFaceFaces_;
+}
+
+
+inline const Foam::List<Foam::DynamicList<Foam::label>>&
+Foam::patchIntersection::tgtFaceFaces() const
+{
+    return tgtFaceFaces_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::faceSrcFaces() const
+{
+    return faceSrcFaces_;
+}
+
+
+inline const Foam::DynamicList<Foam::label>&
+Foam::patchIntersection::faceTgtFaces() const
+{
+    return faceTgtFaces_;
 }
 
 

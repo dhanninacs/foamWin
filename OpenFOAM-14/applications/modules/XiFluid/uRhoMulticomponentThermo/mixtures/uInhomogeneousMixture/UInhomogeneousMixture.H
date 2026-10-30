@@ -22,26 +22,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::UInhomogeneousMixture
+    Foam::uInhomogeneousMixture
 
 Description
-    Templated unburnt gas combustion mixture for inhomogeneous lean,
-    stoichiometric or rich conditions
+    Unburnt gas combustion mixture for inhomogeneous lean, stoichiometric
+    or rich conditions
 
     in which the fuel mass-fraction \c fu defines the composition.
 
-See also
-    Foam::uInhomogeneousMixture
-
 SourceFiles
-    UInhomogeneousMixture.C
+    uInhomogeneousMixture.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef UInhomogeneousMixture_H
-#define UInhomogeneousMixture_H
+#ifndef uInhomogeneousMixture_H
+#define uInhomogeneousMixture_H
 
-#include "uInhomogeneousMixture.H"
+#include "uMixture.H"
+#include "speciesTable.H"
+#include "FieldListSlice.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,98 +48,79 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                    Class UInhomogeneousMixture Declaration
+                    Class uInhomogeneousMixture Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class ThermoType>
-class UInhomogeneousMixture
+class uInhomogeneousMixture
 :
-    public uInhomogeneousMixture
+    public uMixture
 {
-public:
+protected:
 
-    // Public Typedefs
+    // Protected Data
 
-        //- The type of thermodynamics this mixture is instantiated for
-        typedef ThermoType thermoType;
+        //- Table of specie names
+        speciesTable species_;
 
-        //- Mixing type for thermodynamic properties
-        typedef ThermoType thermoMixtureType;
-
-        //- Mixing type for transport properties
-        typedef ThermoType transportMixtureType;
-
-
-private:
-
-    // Private Data
-
-        //- Fuel thermodynamic model
-        thermoType fuel_;
-
-        //- Oxidant thermodynamic model
-        thermoType oxidant_;
+        //- Stoichiometric air/fuel ratio
+        scalar stoicRatio_;
 
         //- List of specie active flags
         boolList active_;
 
-        //- Mutable storage for the mixed thermodynamic model
-        mutable thermoType mixture_;
-
-
-    // Private Member Functions
-
-        //- Return the mixture for the given composition
-        const thermoType& mixture(const scalar fu) const;
-
 
 public:
+
+    //- Runtime type information
+    ClassName("uInhomogeneous");
+
+    //- Specie indices
+    enum species { FU };
+
 
     // Constructors
 
         //- Construct from a dictionary
-        UInhomogeneousMixture(const dictionary&);
+        uInhomogeneousMixture(const dictionary&);
 
         //- Disallow default bitwise copy construction
-        UInhomogeneousMixture
-        (
-            const UInhomogeneousMixture<ThermoType>&
-        ) = delete;
+        uInhomogeneousMixture(const uInhomogeneousMixture&) = delete;
 
 
     // Member Functions
 
-        //- Return the instantiated type name
-        static word typeName()
+        //- Return the mixture type name
+        virtual const word& mixtureType() const
         {
-            return
-                uInhomogeneousMixture::typeName
-              + '<' + ThermoType::typeName() + '>';
+            return typeName;
         }
 
-        inline const ThermoType& specieThermo(const label speciei) const
+        //- Return the table of species
+        const speciesTable& species() const
         {
-            return fuel_;
+            return species_;
         }
 
-        //- Return the mixture for thermodynamic properties
-        const thermoMixtureType& thermoMixture
-        (
-            const scalarFieldListSlice&
-        ) const;
+        //- Access the specie active flags
+        const boolList& speciesActive() const
+        {
+            return active_;
+        }
 
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&
-        ) const;
+        //- Access the specie active flags
+        boolList& speciesActive()
+        {
+            return active_;
+        }
 
-        //- Return the mixture for transport properties
-        const transportMixtureType& transportMixture
-        (
-            const scalarFieldListSlice&,
-            const thermoMixtureType&
-        ) const;
+        //- Return the stoichiometric air/fuel ratio
+        scalar stoicRatio() const
+        {
+            return stoicRatio_;
+        }
+
+        //- Return the fuel-oxidant equivalence ratio
+        scalar Phi(const scalarFieldListSlice& Yu) const;
 
         //- Read dictionary
         void read(const dictionary&);
@@ -149,19 +129,13 @@ public:
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const UInhomogeneousMixture<ThermoType>&) = delete;
+        void operator=(const uInhomogeneousMixture&) = delete;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "UInhomogeneousMixture.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

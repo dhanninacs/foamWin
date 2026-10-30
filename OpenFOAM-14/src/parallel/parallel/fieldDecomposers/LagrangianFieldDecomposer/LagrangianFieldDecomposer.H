@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,22 +22,21 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::LagrangianFieldDecomposer
+    Foam::lagrangianFieldDecomposer
 
 Description
-    Lagrangian field decomposer
+    Lagrangian field decomposer.
 
 SourceFiles
-    LagrangianFieldDecomposer.C
-    LagrangianFieldDecomposerTemplates.C
+    lagrangianFieldDecomposer.C
+    lagrangianFieldDecomposerTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef LagrangianFieldDecomposer_H
-#define LagrangianFieldDecomposer_H
+#ifndef lagrangianFieldDecomposer_H
+#define lagrangianFieldDecomposer_H
 
 #include "fvMesh.H"
-#include "LagrangianMesh.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -45,49 +44,42 @@ namespace Foam
 {
 
 class IOobjectList;
+class passiveParticleCloud;
 
 /*---------------------------------------------------------------------------*\
-                  Class LagrangianFieldDecomposer Declaration
+                  Class lagrangianFieldDecomposer Declaration
 \*---------------------------------------------------------------------------*/
 
-class LagrangianFieldDecomposer
+class lagrangianFieldDecomposer
 {
     // Private Data
 
-        //- The complete mesh
-        LagrangianMesh completeMesh_;
+        //- Reference to complete mesh
+        const fvMesh& completeMesh_;
 
         //- List of processor meshes
-        PtrList<LagrangianMesh> procMeshes_;
+        const PtrList<fvMesh>& procMeshes_;
 
-        //- For each processor, for each element, the global element index
+        //- For each processor, for each particle, the global particle index
         labelListList particleProcAddressing_;
+
+        //- Decomposed clouds
+        PtrList<passiveParticleCloud> procClouds_;
+
+        //- The name of the cloud
+        const word cloudName_;
 
 
     // Private Member Functions
 
-        //- Return whether anything in the object list gets decomposed
-        template<class GeoField>
-        static bool decomposes(const IOobjectList& objects);
-
-        //- Return the decomposed internal field given a list of processor
-        //  internal fields
-        template<class Type, template<class> class PrimitiveField>
-        PtrList<DimensionedField<Type, LagrangianMesh, PrimitiveField>>
-        decomposeLagrangianField
-        (
-            const DimensionedField<Type, LagrangianMesh, PrimitiveField>&
-                completeField
-        ) const;
-
-        //- Return the decomposed field given a list of processor fields
-        template<class Type, template<class> class PrimitiveField>
-        PtrList<GeometricField<Type, LagrangianMesh, PrimitiveField>>
-        decomposeLagrangianField
-        (
-            const GeometricField<Type, LagrangianMesh, PrimitiveField>&
-                completeField
-        ) const;
+        //- Read, decompose and write all fields
+        template
+        <
+            class Type,
+            template<class> class ReadIOContainer,
+            template<class> class IOContainer
+        >
+        void decomposeFields(const IOobjectList& objects) const;
 
 
 public:
@@ -95,24 +87,21 @@ public:
     // Constructors
 
         //- Construct from components
-        LagrangianFieldDecomposer
+        lagrangianFieldDecomposer
         (
-            const fvMesh& completeFvMesh,
-            const PtrList<fvMesh>& procFvMeshes,
+            const fvMesh& completeMesh,
+            const PtrList<fvMesh>& procMeshes,
             const labelListList& faceProcAddressing,
             const labelListList& cellProcAddressing,
-            const word& LagrangianName
+            const word& cloudName
         );
 
         //- Disallow default bitwise copy construction
-        LagrangianFieldDecomposer
-        (
-            const LagrangianFieldDecomposer&
-        ) = delete;
+        lagrangianFieldDecomposer(const lagrangianFieldDecomposer&) = delete;
 
 
     //- Destructor
-    ~LagrangianFieldDecomposer();
+    ~lagrangianFieldDecomposer();
 
 
     // Member Functions
@@ -120,25 +109,30 @@ public:
         //- Return whether anything in the object list gets decomposed
         static bool decomposes(const IOobjectList& objects);
 
-        //- Access the decomposed meshes
-        const PtrList<LagrangianMesh>& procMeshes() const;
+        //- Access the decomposed clouds
+        const PtrList<passiveParticleCloud>& procClouds() const;
 
         //- Write the decomposed positions
         void decomposePositions() const;
 
-        //- Read and decompose a field
-        template<class GeoField>
-        PtrList<GeoField> decomposeField(const IOobject&) const;
+        //- Read and Decompose a field
+        template
+        <
+            class Type,
+            template<class> class ReadIOContainer,
+            template<class> class IOContainer
+        >
+        PtrList<IOContainer<Type>> decomposeField(const IOobject&) const;
 
-        //- Read, decompose and write all Lagrangian fields
-        template<class GeoField>
+        //- Read, decompose and write all fields
+        template<class Type>
         void decomposeFields(const IOobjectList& objects) const;
 
 
     // Member Operators
 
         //- Disallow default bitwise assignment
-        void operator=(const LagrangianFieldDecomposer&) = delete;
+        void operator=(const lagrangianFieldDecomposer&) = delete;
 };
 
 
@@ -149,7 +143,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "LagrangianFieldDecomposerTemplates.C"
+    #include "lagrangianFieldDecomposerTemplates.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
