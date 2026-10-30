@@ -12,3 +12,7 @@ a clean cavity fixture. A fresh ZIP prevents obsolete entries surviving a rebuil
 The EXE includes install/uninstall registration and optional shortcuts. MSYS2 is
 optional; the PowerShell launcher requires neither MSYS2 nor WSL. See
 [Windows usage](WINDOWS-README.md) and [repair details](WINDOWS-REPAIR.md).
+
+For optional real Scotch and METIS decomposition, see
+[partitioner builds](PARTITIONERS.md). Dummy decomposition libraries do not
+provide the corresponding partitioning algorithms.

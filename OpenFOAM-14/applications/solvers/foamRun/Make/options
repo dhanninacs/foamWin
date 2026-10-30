@@ -1,5 +1,13 @@
 EXE_INC = \
     -I$(LIB_SRC)/finiteVolume/lnInclude
 
+# On MinGW an unreferenced DLL is never loaded, so its run-time selection
+# tables never register. The -u anchors force an import from libfvModels and
+# libfvConstraints (the symbols are their constructor-table entries). Without
+# them, constant/fvModels and system/fvConstraints fail with "Unknown ... type".
 EXE_LIBS = \
-    -lfiniteVolume
+    -lfiniteVolume \
+    -lfvModels \
+    -lfvConstraints \
+    -Wl,-u,_ZN4Foam7fvModel31adddictionaryConstructorToTableINS_2fv13porosityForceEE3NewERKNS_4wordES7_RKNS_6fvMeshERKNS_10dictionaryE \
+    -Wl,-u,_ZN4Foam12fvConstraint31adddictionaryConstructorToTableINS_2fv13limitPressureEE3NewERKNS_4wordES7_RKNS_6fvMeshERKNS_10dictionaryE

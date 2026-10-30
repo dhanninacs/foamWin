@@ -21,6 +21,17 @@ EXE_INC = \
     -I$(LIB_SRC)/reactionModels/lnInclude
 
 LIB_LIBS = \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lphysicalProperties \
+    -lfluidThermophysicalModels \
+    -lsolidThermo \
+    -lmomentumTransportModels \
+    -lcompressibleMomentumTransportModels \
+    -lthermophysicalTransportModel \
+    -lfluidThermophysicalTransportModel \
+    -lspecie \
+    -ltwoPhaseMixture \
     -lsampling \
     -lmulticomponentThermophysicalModels \
     -lsaturationModels \

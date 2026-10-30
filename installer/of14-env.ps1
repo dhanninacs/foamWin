@@ -21,6 +21,11 @@ foreach ($name in $required) {
     if (Test-Path -LiteralPath $path -PathType Leaf) { $tools[$name] = $path }
     else { $tools[$name] = $null; $missing += $name }
 }
+# Optional tools are reported without making an older core install invalid.
+foreach ($name in @('gmsh','gmshToFoam','polyDualMesh')) {
+    $command = Get-Command "$name.exe" -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    $tools[$name] = if ($command) { $command.Source } else { $null }
+}
 $modules = @(Get-ChildItem -LiteralPath $env:FOAM_LIBBIN -Filter '*.dll' | ForEach-Object { $_.BaseName -replace '^lib','' })
 $casePath = $null
 if ($CaseDirectory) { $casePath = ConvertTo-OpenFOAMPath $CaseDirectory }

@@ -3,4 +3,8 @@ EXE_INC = \
     -I$(LIB_SRC)/finiteVolume/lnInclude
 
 EXE_LIBS = \
-    -lfiniteVolume
+    -lfiniteVolume \
+    -lfvModels \
+    -lfvConstraints \
+    -Wl,-u,_ZN4Foam7fvModel31adddictionaryConstructorToTableINS_2fv13porosityForceEE3NewERKNS_4wordES7_RKNS_6fvMeshERKNS_10dictionaryE \
+    -Wl,-u,_ZN4Foam12fvConstraint31adddictionaryConstructorToTableINS_2fv13limitPressureEE3NewERKNS_4wordES7_RKNS_6fvMeshERKNS_10dictionaryE

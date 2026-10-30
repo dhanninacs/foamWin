@@ -79,6 +79,11 @@ if ($mpiRuntime -and $mpiBackend) {
     $env:FOAM_MPIEXEC = ''
     $env:PATH = "$platform/bin;$platform/lib;$platform/lib/dummy;$env:PATH"
 }
+# Standalone mesher; keep its runtime separate from OpenFOAM DLLs.
+$gmshDirectory = Join-Path $PSScriptRoot 'gmsh'
+if (Test-Path -LiteralPath (Join-Path $gmshDirectory 'gmsh.exe')) {
+    $env:PATH = "$gmshDirectory;$env:PATH"
+}
 function global:Invoke-FoamWinParallel {
     param(
         [Parameter(Mandatory=$true)][ValidateRange(2,256)][int]$Processes,

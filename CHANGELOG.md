@@ -1,3 +1,10 @@
+# Unreleased
+
+- Correct Windows runtime registration for recovered solver modules, coupled temperature and film patches, and wall-function fields in mesh utilities.
+- Correct the condenser tutorial's multiphase model library name.
+- Normalize Windows executable paths and `mapFields` source paths, and encode reserved characters in function-object output directory names.
+- Add build and validation helpers for recovered utilities and optional METIS and Scotch partitioners. Third-party dependencies and their redistribution terms require separate review.
+
 # v14.0.0-win.3 — Native application engine support
 
 - Added surfaceFeatures, foamPostProcess, foamToVTK and the VTK export library.

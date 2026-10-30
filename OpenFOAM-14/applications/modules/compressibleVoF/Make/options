@@ -17,6 +17,7 @@ EXE_INC = \
     -I$(LIB_SRC)/meshTools/lnInclude
 
 LIB_LIBS = \
+    -Wl,-u,__imp__ZN4Foam20surfaceTensionModels67addliquidPropertiesdictionaryConstructorTosurfaceTensionModelTable_E \
     -lVoFSolver \
     -ltwoPhaseSolver \
     -lfluidThermoThermophysicalTransportModels \

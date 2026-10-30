@@ -14,6 +14,23 @@ EXE_INC = \
     -I$(LIB_SRC)/MomentumTransportModels/phaseCompressible/lnInclude
 
 LIB_LIBS = \
+    -Wl,-u,__imp__ZN4Foam9RASModels131addmixtureKEpsilonRASphaseCompressibleMomentumTransportModeldictionaryConstructorToRASphaseCompressibleMomentumTransportModelTable_E \
+    -Wl,-u,__imp__ZN4Foam47multiphaseExternalTemperatureFvPatchScalarField8typeNameE \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lsampling \
+    -lphysicalProperties \
+    -lfluidThermophysicalModels \
+    -lmulticomponentThermophysicalModels \
+    -lmomentumTransportModels \
+    -lcompressibleMomentumTransportModels \
+    -lphaseCompressibleMomentumTransportModels \
+    -lthermophysicalTransportModel \
+    -lfluidThermophysicalTransportModel \
+    -lspecie \
+    -ltwoPhaseMixture \
+    -lcompressibleTwoPhases \
+    -lphaseSystem \
     -lbasicFluidSolver \
     -lpopulationBalance \
     -lmultiphaseEulerMomentumTransportModels \

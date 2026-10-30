@@ -15,10 +15,12 @@ EXE_INC = \
 LIB_LIBS = \
     -lmulticomponentThermophysicalModels \
     -lfluidThermophysicalModels \
+    -lsolidThermo \
     -lphysicalProperties \
     -lfiniteVolume \
     -lsampling \
     -lmeshTools \
     -lmomentumTransportModels \
     -lcompressibleMomentumTransportModels \
+    -lthermophysicalTransportModel \
     -lfluidThermoThermophysicalTransportModels
