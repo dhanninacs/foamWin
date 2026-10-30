@@ -18,7 +18,7 @@ cxxtoo      = $(Ctoo)
 cctoo       = $(Ctoo)
 cpptoo      = $(Ctoo)
 
-LINK_LIBS   = $(c++DBUG)
+LINK_LIBS   = $(c++DBUG) -lfiniteVolume -lmeshTools -lsurfMesh -ltriSurface -lfileFormats -lOpenFOAM
 
 # Tried using -Wl,-no-undefined,--enable-runtime-pseudo-reloc
 # but didn't forgive undefined symbols during linking

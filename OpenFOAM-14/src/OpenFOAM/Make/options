@@ -10,9 +10,8 @@ PROJECT_LIBS =
 LIB_LIBS = \
     -Wl,-whole-archive -lOSspecific -Wl,-no-whole-archive \
     -L$(FOAM_LIBBIN)/dummy -lPstream \
-    -L$(FOAM_EXT_LIBBIN) -lstack_trace \
-    -lz \
-    -lregex
+    -L$(FOAM_EXT_LIBBIN) -lstack_trace -limagehlp -ldbghelp \
+    -lz
 
 else
 

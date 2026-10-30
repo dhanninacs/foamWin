@@ -115,6 +115,7 @@ becomes
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "dlLibraryTable.H"
 #include "polyTopoChange.H"
 #include "mappedWallPolyPatch.H"
 #include "mappedExtrudedWallPolyPatch.H"
@@ -1037,6 +1038,10 @@ int main(int argc, char *argv[])
     #include "addDictOption.H"
     #include "setRootCase.H"
     #include "createTime.H"
+    // Film wall patch types are registered by the film solver module.
+    #ifdef WIN64
+    libs.open("libisothermalFilmSolver.so", false);
+    #endif
     #include "createSpecifiedMeshNoChangers.H"
 
     if (mesh.poly().boundary().checkParallelSync(true))

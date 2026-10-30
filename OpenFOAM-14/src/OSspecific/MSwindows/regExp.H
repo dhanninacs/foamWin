@@ -41,14 +41,15 @@ Class
     Foam::regExp
 
 Description
-    Wrapper around POSIX extended regular expressions.
+    Wrapper around std::regex using the POSIX extended (ERE) grammar.
 
     The PCRE '(?i)' extension is provided to compile the regular expression
     as being case-insensitive.
 
 See also
-    The manpage regex(7) for more information about POSIX regular expressions.
-    These differ somewhat from \c Perl and \c sed regular expressions.
+    The manpage regex(7) for the POSIX regular expression grammar that
+    std::regex::extended follows.  Matching is ECMAScript-style
+    (leftmost-first), so full-string matches use std::regex_match.
 
 SourceFiles
     regExp.C
@@ -58,7 +59,7 @@ SourceFiles
 #ifndef regExp_H
 #define regExp_H
 
-#include <regex.h>
+#include <regex>
 #include <string>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -80,7 +81,7 @@ class regExp
     // Private data
 
         //- Precompiled regular expression
-        mutable regex_t* preg_;
+        mutable std::regex* preg_;
 
 
     // Private Member Functions
@@ -156,7 +157,7 @@ public:
             //- Return the number of (groups)
             inline int ngroups() const
             {
-                return int(preg_ ? preg_->re_nsub : 0);
+                return int(preg_ ? preg_->mark_count() : 0);
             }
 
 

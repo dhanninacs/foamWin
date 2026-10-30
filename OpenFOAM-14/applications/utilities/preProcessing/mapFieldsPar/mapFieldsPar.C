@@ -31,6 +31,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "OSspecific.H"
 #include "fvMeshToFvMesh.H"
 #include "mapGeometricFields.H"
 #include "mapClouds.H"
@@ -150,7 +151,11 @@ int main(int argc, char *argv[])
     fileName rootDirTarget(args.rootPath());
     fileName caseDirTarget(args.globalCaseName());
 
+    #ifdef WIN64
+    const fileName casePath(toUnixPath(args[1]));
+    #else
     const fileName casePath = args[1];
+    #endif
     const fileName rootDirSource = casePath.path();
     const fileName caseDirSource = casePath.name();
 

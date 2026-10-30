@@ -50,6 +50,7 @@ Usage
 
 #include "argList.H"
 #include "Time.H"
+#include "dlLibraryTable.H"
 #include "systemDict.H"
 #include "blockMesh.H"
 #include "mergePatchPairs.H"
@@ -106,6 +107,31 @@ int main(int argc, char *argv[])
     #include "setRootCaseNoFunctionObjects.H"
     #include "setMeshPath.H"
     #include "createTimeNoFunctionObjects.H"
+
+    // Film wall patches are registered by the film solver module.  On
+    // Windows the module is not otherwise loaded by blockMesh.
+    #ifdef WIN64
+    bool needsFilmPatches = false;
+    if (runTime.controlDict().found("solver"))
+    {
+        const word solverName(runTime.controlDict().lookup("solver"));
+        needsFilmPatches = solverName == "film" || solverName == "isothermalFilm";
+    }
+    if (runTime.controlDict().found("regionSolvers"))
+    {
+        const dictionary& regions = runTime.controlDict().subDict("regionSolvers");
+        forAllConstIter(dictionary, regions, iter)
+        {
+            const word solverName(iter().stream());
+            needsFilmPatches = needsFilmPatches
+                || solverName == "film" || solverName == "isothermalFilm";
+        }
+    }
+    if (needsFilmPatches)
+    {
+        libs.open("libisothermalFilmSolver.so");
+    }
+    #endif
 
     const word dictName("blockMeshDict");
 

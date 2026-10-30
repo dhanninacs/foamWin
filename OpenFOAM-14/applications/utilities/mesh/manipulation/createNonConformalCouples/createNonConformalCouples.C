@@ -69,6 +69,7 @@ Note
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "dlLibraryTable.H"
 #include "fvMeshTools.H"
 #include "hashedWordList.H"
 #include "IOobjectList.H"
@@ -404,6 +405,14 @@ int main(int argc, char *argv[])
             couples.append(nonConformalCouple(primaryRegionName, subDict));
         }
     }
+
+    // Register coupled temperature fields before reading region fields.
+    #ifdef WIN64
+    if (fields)
+    {
+        libs.open("libcoupledThermophysicalTransportModels.so", false);
+    }
+    #endif
 
     // Determine if operating on meshes within a sub-path
     const bool haveMeshPath = meshPath != word::null;

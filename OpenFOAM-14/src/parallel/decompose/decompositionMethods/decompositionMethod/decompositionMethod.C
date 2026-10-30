@@ -156,6 +156,19 @@ Foam::decompositionMethod::NewDecomposer
         decomposerConstructorTablePtr_
     );
 
+    // Windows does not automatically load optional partitioner DLLs when
+    // their registration tables are the only referenced symbols.
+    #ifdef WIN64
+    if
+    (
+        !decomposerConstructorTablePtr_->found(methodType)
+     && (methodType == "metis" || methodType == "scotch")
+    )
+    {
+        libs.open("lib" + methodType + "Decomp.so", false);
+    }
+    #endif
+
     decomposerConstructorTable::iterator cstrIter =
         decomposerConstructorTablePtr_->find(methodType);
 
@@ -208,6 +221,13 @@ Foam::decompositionMethod::NewDistributor
         "libs",
         distributorConstructorTablePtr_
     );
+
+    #ifdef WIN64
+    if (!distributorConstructorTablePtr_->found(methodType) && methodType == "scotch")
+    {
+        libs.open("libscotchDecomp.so", false);
+    }
+    #endif
 
     distributorConstructorTable::iterator cstrIter =
         distributorConstructorTablePtr_->find(methodType);

@@ -52,30 +52,21 @@ bool Foam::regExp::matchGrouping
 {
     if (preg_ && str.size())
     {
-        size_t nmatch = ngroups() + 1;
-        regmatch_t pmatch[nmatch];
+        std::smatch m;
 
         // Also verify that the entire string was matched.
-        // pmatch[0] is the entire match
-        // pmatch[1..] are the (...) sub-groups
-        if
-        (
-            regexec(preg_, str.c_str(), nmatch, pmatch, 0) == 0
-         && (pmatch[0].rm_so == 0 && pmatch[0].rm_eo == label(str.size()))
-        )
+        // m[0] is the entire match
+        // m[1..] are the (...) sub-groups
+        if (std::regex_match(str, m, *preg_))
         {
             groups.setSize(ngroups());
             label groupI = 0;
 
-            for (size_t matchI = 1; matchI < nmatch; matchI++)
+            for (size_t matchI = 1; matchI < m.size(); matchI++)
             {
-                if (pmatch[matchI].rm_so != -1 && pmatch[matchI].rm_eo != -1)
+                if (m[matchI].matched)
                 {
-                    groups[groupI] = str.substr
-                    (
-                        pmatch[matchI].rm_so,
-                        pmatch[matchI].rm_eo - pmatch[matchI].rm_so
-                    );
+                    groups[groupI] = m[matchI].str();
                 }
                 else
                 {
@@ -134,10 +125,10 @@ void Foam::regExp::set(const char* pattern, const bool ignoreCase) const
     // Avoid nullptr and zero-length patterns
     if (pattern && *pattern)
     {
-        int cflags = REG_EXTENDED;
+        std::regex::flag_type flags = std::regex::extended;
         if (ignoreCase)
         {
-            cflags |= REG_ICASE;
+            flags |= std::regex::icase;
         }
 
         const char* pat = pattern;
@@ -147,7 +138,7 @@ void Foam::regExp::set(const char* pattern, const bool ignoreCase) const
         // - a simple check is sufficient
         if (!strncmp(pattern, "(?i)", 4))
         {
-            cflags |= REG_ICASE;
+            flags |= std::regex::icase;
             pat += 4;
 
             // avoid zero-length patterns
@@ -157,17 +148,15 @@ void Foam::regExp::set(const char* pattern, const bool ignoreCase) const
             }
         }
 
-        preg_ = new regex_t;
-        int err = regcomp(preg_, pat, cflags);
-
-        if (err != 0)
+        try
         {
-            char errbuf[200];
-            regerror(err, preg_, errbuf, sizeof(errbuf));
-
+            preg_ = new std::regex(pat, flags);
+        }
+        catch (const std::regex_error& err)
+        {
             FatalErrorInFunction
                 << "Failed to compile regular expression '" << pattern << "'"
-                << nl << errbuf
+                << nl << err.what()
                 << exit(FatalError);
         }
     }
@@ -184,7 +173,6 @@ bool Foam::regExp::clear() const
 {
     if (preg_)
     {
-        regfree(preg_);
         delete preg_;
         preg_ = 0;
 
@@ -199,12 +187,11 @@ std::string::size_type Foam::regExp::find(const std::string& str) const
 {
     if (preg_ && str.size())
     {
-        size_t nmatch = 1;
-        regmatch_t pmatch[1];
+        std::smatch m;
 
-        if (regexec(preg_, str.c_str(), nmatch, pmatch, 0) == 0)
+        if (std::regex_search(str, m, *preg_))
         {
-            return pmatch[0].rm_so;
+            return size_t(m.position(0));
         }
     }
 
@@ -216,16 +203,8 @@ bool Foam::regExp::match(const std::string& str) const
 {
     if (preg_ && str.size())
     {
-        size_t nmatch = 1;
-        regmatch_t pmatch[1];
-
         // Also verify that the entire string was matched
-        // pmatch[0] is the entire match
-        if
-        (
-            regexec(preg_, str.c_str(), nmatch, pmatch, 0) == 0
-         && (pmatch[0].rm_so == 0 && pmatch[0].rm_eo == label(str.size()))
-        )
+        if (std::regex_match(str, *preg_))
         {
             return true;
         }

@@ -72,7 +72,30 @@ bool Foam::fileName::hasPath() const
 
 bool Foam::fileName::isAbsolute() const
 {
-    return !empty() && operator[](0) == '/';
+    if (empty())
+    {
+        return false;
+    }
+
+    if (operator[](0) == '/')
+    {
+        return true;
+    }
+
+#if defined(_WIN32)
+    if (size() >= 3 && operator[](1) == ':')
+    {
+        const char drive = operator[](0);
+        const bool driveLetter =
+            (drive >= 'A' && drive <= 'Z')
+         || (drive >= 'a' && drive <= 'z');
+
+        return driveLetter
+            && (operator[](2) == '/' || operator[](2) == '\\');
+    }
+#endif
+
+    return false;
 }
 
 

@@ -864,7 +864,11 @@ bool Foam::functionObjects::fieldValues::surfaceFieldValue::write()
         {
             surfaceWriterPtr_->write
             (
+                #ifdef WIN64
+                baseTimeDir(),
+                #else
                 baseFileDir()/name()/time_.name(),
+                #endif
                 word(selectionTypeNames[selectionType_])
               + "("
               + (

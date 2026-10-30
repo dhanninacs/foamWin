@@ -513,7 +513,12 @@ Foam::argList::argList
 
     // Get executable name
     args_[0]    = fileName(argv[0]);
-    executable_ = fileName(argv[0]).name();
+    fileName executablePath(argv[0]);
+    #ifdef WIN64
+    // Windows launches can supply a backslash-delimited absolute argv[0].
+    executablePath = toUnixPath(executablePath);
+    #endif
+    executable_ = executablePath.name();
 
     // Check arguments and options, we already have argv[0]
     int nArgs = 1;

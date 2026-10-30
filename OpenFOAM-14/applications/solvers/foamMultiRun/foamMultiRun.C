@@ -82,6 +82,7 @@ Usage
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "dlLibraryTable.H"
 #include "regionSolvers.H"
 #include "pimpleMultiRegionControl.H"
 #include "setDeltaT.H"
@@ -94,6 +95,12 @@ int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
+
+    // Coupled temperature patches are registered by a separate library that
+    // Windows does not otherwise load when constructing the region solvers.
+    #ifdef WIN64
+    libs.open("libcoupledThermophysicalTransportModels.so", false);
+    #endif
 
     // Create the region meshes and solvers
     regionSolvers solvers(runTime);

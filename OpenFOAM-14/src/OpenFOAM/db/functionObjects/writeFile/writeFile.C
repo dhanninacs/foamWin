@@ -36,6 +36,32 @@ const Foam::word Foam::functionObjects::writeFile::outputPrefix
 
 Foam::label Foam::functionObjects::writeFile::addChars = 8;
 
+#ifdef WIN64
+// Function-object names may contain field names such as cloud:alpha. Encode
+// Windows-reserved characters only for the output directory, not the object
+// name used to look up fields. Escape '%' as well to keep the mapping distinct.
+static Foam::word windowsOutputPrefix(const Foam::word& prefix)
+{
+    static const char hex[] = "0123456789ABCDEF";
+    Foam::string encoded;
+    for (const unsigned char c : prefix)
+    {
+        if (c < 32 || c == '%' || c == ':' || c == '<' || c == '>'
+         || c == '"' || c == '/' || c == '\\' || c == '|' || c == '?' || c == '*')
+        {
+            encoded += '%';
+            encoded += hex[c >> 4];
+            encoded += hex[c & 15];
+        }
+        else
+        {
+            encoded += c;
+        }
+    }
+    return Foam::word(encoded, false);
+}
+#endif
+
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
@@ -88,7 +114,11 @@ Foam::functionObjects::writeFile::writeFile
 )
 :
     fileObr_(obr),
+    #ifdef WIN64
+    prefix_(windowsOutputPrefix(prefix))
+    #else
     prefix_(prefix)
+    #endif
 {}
 
 

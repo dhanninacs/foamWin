@@ -39,6 +39,7 @@ Description
 
 #include "argList.H"
 #include "Time.H"
+#include "dlLibraryTable.H"
 #include "polyTopoChange.H"
 #include "ReadFields.H"
 #include "volFields.H"
@@ -347,6 +348,15 @@ int main(int argc, char *argv[])
     const dictionary dict(systemDict("createBafflesDict", args, mesh));
     Switch internalFacesOnly = dict.lookup<Switch>("internalFacesOnly");
     const Switch fields = dict.lookupOrDefault("fields", false);
+
+    // The wall-function patch fields are registered by this library. On
+    // Windows it is not otherwise loaded when this utility reads fields.
+    #ifdef WIN64
+    if (fields)
+    {
+        libs.open("libmomentumTransportModels.so", false);
+    }
+    #endif
 
     // Create face selections
     PtrList<faceSelection> selectors;

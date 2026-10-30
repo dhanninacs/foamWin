@@ -33,6 +33,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "OSspecific.H"
 #include "mapMeshes.H"
 #include "decompositionMethod.H"
 
@@ -99,7 +100,11 @@ int main(int argc, char *argv[])
     fileName rootDirTarget(args.rootPath());
     fileName caseDirTarget(args.globalCaseName());
 
+    #ifdef WIN64
+    fileName casePath(toUnixPath(args[1]));
+    #else
     fileName casePath = args[1];
+    #endif
     const fileName rootDirSource = casePath.path().toAbsolute();
     const fileName caseDirSource = casePath.name();
 
