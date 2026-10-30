@@ -18,7 +18,7 @@ mkdir -p "$FOAM_EXT_LIBBIN"
 # ---- Third-party ----------------------------------------------------------
 mkdir -p "$WM_THIRD_PARTY_DIR/stack_trace/lnInclude"
 cp "$WM_THIRD_PARTY_DIR/third-party/stack_trace/stack_trace.h" "$WM_THIRD_PARTY_DIR/stack_trace/lnInclude/"
-(cd "$WM_THIRD_PARTY_DIR/third-party/stack_trace" && wmake libso)
+(cd "$WM_THIRD_PARTY_DIR/third-party/stack_trace" && wmake lib)
 
 # ---- Core: Pstream static -> OSspecific -> OpenFOAM -> Pstream dll -------
 (cd src/Pstream/dummy && wmake lib)
