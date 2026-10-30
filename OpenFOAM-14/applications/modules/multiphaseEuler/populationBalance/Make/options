@@ -16,4 +16,18 @@ EXE_INC = \
     -I$(LIB_SRC)/ThermophysicalTransportModels/fluid/lnInclude
 
 LIB_LIBS = \
-    -lphaseSystem
+    -lfiniteVolume \
+    -lmeshTools \
+    -lphysicalProperties \
+    -lfluidThermophysicalModels \
+    -lmulticomponentThermophysicalModels \
+    -lmomentumTransportModels \
+    -lcompressibleMomentumTransportModels \
+    -lphaseCompressibleMomentumTransportModels \
+    -lthermophysicalTransportModel \
+    -lfluidThermophysicalTransportModel \
+    -lspecie \
+    -ltwoPhaseMixture \
+    -lsampling \
+    -lphaseSystem \
+    -lcompressibleTwoPhases

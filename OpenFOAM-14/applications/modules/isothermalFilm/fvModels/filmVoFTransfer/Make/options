@@ -23,4 +23,8 @@ EXE_INC = \
 
 LIB_LIBS = \
     -lisothermalFilmSolver \
-    -lcompressibleVoFSolver
+    -lcompressibleVoFSolver \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lfvConstraints \
+    -lfvModels

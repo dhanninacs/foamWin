@@ -12,6 +12,8 @@ EXE_INC = \
     -I$(LIB_SRC)/meshTools/lnInclude
 
 LIB_LIBS = \
+    -lfluidThermophysicalModels \
+    -lthermophysicalTransportModel \
     -lisothermalFilmSolver \
     -lfilmThermophysicalTransportModels \
     -lcoupledThermophysicalTransportModels \
@@ -21,4 +23,6 @@ LIB_LIBS = \
     -lmeshTools \
     -lsampling \
     -lfvModels \
-    -lfvConstraints
+    -lfvConstraints \
+    -lfluidThermophysicalTransportModel \
+    -lspecie
