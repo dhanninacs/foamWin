@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Cross-build separately supplied Scotch, METIS, and GKlib sources. This script
+# Cross-build separately supplied Scotch, METIS, and GKlib sources, and, when
+# MSMPI_ROOT is set, PT-Scotch and (with ZOLTAN_SOURCE) Zoltan. This script
 # copies sources into a new build directory; it does not download or install
 # third-party software globally. Scotch executes a generated Windows helper, so
 # the Linux host needs WSL Windows executable interop or an equivalent runner.
@@ -69,3 +70,35 @@ printf 'SCOTCH_ARCH_PATH=%s\n' "$BUILD/scotch"
 printf 'METIS_INCLUDE_DIR=%s\n' "$BUILD/metis/build/xinclude"
 printf 'METIS_LIB_DIR=%s\n' "$BUILD/metis-build/libmetis"
 printf 'GKLIB_LIB_DIR=%s\n' "$BUILD/gklib-install/lib"
+
+# ---- Optional MS-MPI partitioners: PT-Scotch and Zoltan ---------------------
+# MSMPI_ROOT holds mpi.h and libmsmpi.a, as set up by build-msmpi.sh.
+[ -n "${MSMPI_ROOT:-}" ] || exit 0
+test -f "$MSMPI_ROOT/include/mpi.h"
+test -f "$MSMPI_ROOT/lib/libmsmpi.a"
+MPI_CFLAGS="-DMSMPI_NO_SAL -DMSMPI_NO_DEPRECATE_2012 -I$MSMPI_ROOT/include"
+
+cp -a "$SCOTCH_SOURCE" "$BUILD/ptscotch"
+sed -e "s#^CFLAGS = \(.*\)#CFLAGS = \1 $MPI_CFLAGS#" \
+    -e "s#^LDFLAGS = .*#LDFLAGS = -L$MSMPI_ROOT/lib -lmsmpi -lm#" \
+    "$BUILD/scotch/src/Makefile.inc" > "$BUILD/ptscotch/src/Makefile.inc"
+make -C "$BUILD/ptscotch/src" -j "$JOBS" libptscotch
+printf 'PTSCOTCH_ARCH_PATH=%s\n' "$BUILD/ptscotch"
+
+if [ -n "${ZOLTAN_SOURCE:-}" ]; then
+    test -d "$ZOLTAN_SOURCE"
+    cp -a "$ZOLTAN_SOURCE" "$BUILD/zoltan"
+    mkdir -p "$BUILD/zoltan-build"
+    (
+        cd "$BUILD/zoltan-build"
+        ../zoltan/configure --host=x86_64-w64-mingw32 --prefix="$BUILD/zoltan-install" \
+            --disable-fortran --disable-examples --disable-tests \
+            --with-mpi-incdir="$MSMPI_ROOT/include" --with-mpi-libdir="$MSMPI_ROOT/lib" \
+            --with-mpi-libs=-lmsmpi \
+            CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
+            CFLAGS="-O2 -DMSMPI_NO_SAL -DMSMPI_NO_DEPRECATE_2012" CXXFLAGS=-O2
+        make -j "$JOBS"
+        make install
+    )
+    printf 'ZOLTAN_ARCH_PATH=%s\n' "$BUILD/zoltan-install"
+fi

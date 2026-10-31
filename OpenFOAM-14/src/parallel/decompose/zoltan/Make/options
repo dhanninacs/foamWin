@@ -1,5 +1,9 @@
 -include $(GENERAL_RULES)/mplibType
 
+ifeq ($(WM_OSTYPE),MSwindows)
+ZOLTAN_PLATFORM_LIBS = -ldecompositionMethods -lmeshTools $(PLIBS)
+endif
+
 EXE_INC = \
     $(PFLAGS) $(PINC) \
     -I$(FOAM_SRC)/Pstream/mpi/lnInclude \
@@ -11,4 +15,5 @@ LIB_LIBS = \
     -L$(ZOLTAN_ARCH_PATH)/lib \
     $(if $(ZOLTAN_LIB_DIR),-L$(ZOLTAN_LIB_DIR)) \
     -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) \
-    -lzoltan
+    -lzoltan \
+    $(ZOLTAN_PLATFORM_LIBS)

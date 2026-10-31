@@ -3,6 +3,13 @@
 
 -include $(GENERAL_RULES)/mplibType
 
+ifeq ($(WM_OSTYPE),MSwindows)
+PTSCOTCH_PLATFORM_LIBS = -ldecompositionMethods -lmeshTools $(PLIBS) \
+    -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic
+else
+PTSCOTCH_PLATFORM_LIBS = -lrt
+endif
+
 EXE_INC = \
     $(PFLAGS) $(PINC) \
     -I$(FOAM_SRC)/Pstream/mpi/lnInclude \
@@ -18,4 +25,4 @@ LIB_LIBS = \
     -lptscotch \
     -lptscotcherrexit \
     -lscotch \
-    -lrt
+    $(PTSCOTCH_PLATFORM_LIBS)

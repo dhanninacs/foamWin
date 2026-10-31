@@ -49,6 +49,25 @@ namespace Foam
 }
 
 
+#ifdef WIN64
+namespace
+{
+    // Windows does not automatically load optional partitioner DLLs when
+    // their registration tables are the only referenced symbols.
+    void openOptionalPartitioner(const Foam::word& methodType)
+    {
+        static const Foam::wordList optional
+        ({"metis", "parMetis", "ptscotch", "scotch", "zoltan"});
+
+        if (Foam::findIndex(optional, methodType) != -1)
+        {
+            Foam::libs.open("lib" + methodType + "Decomp.so", false);
+        }
+    }
+}
+#endif
+
+
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 Foam::label Foam::decompositionMethod::nWeights
@@ -156,16 +175,10 @@ Foam::decompositionMethod::NewDecomposer
         decomposerConstructorTablePtr_
     );
 
-    // Windows does not automatically load optional partitioner DLLs when
-    // their registration tables are the only referenced symbols.
     #ifdef WIN64
-    if
-    (
-        !decomposerConstructorTablePtr_->found(methodType)
-     && (methodType == "metis" || methodType == "scotch")
-    )
+    if (!decomposerConstructorTablePtr_->found(methodType))
     {
-        libs.open("lib" + methodType + "Decomp.so", false);
+        openOptionalPartitioner(methodType);
     }
     #endif
 
@@ -223,9 +236,9 @@ Foam::decompositionMethod::NewDistributor
     );
 
     #ifdef WIN64
-    if (!distributorConstructorTablePtr_->found(methodType) && methodType == "scotch")
+    if (!distributorConstructorTablePtr_->found(methodType))
     {
-        libs.open("libscotchDecomp.so", false);
+        openOptionalPartitioner(methodType);
     }
     #endif
 
