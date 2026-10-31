@@ -1,0 +1,82 @@
+From 6b619d2dd355c0eee5e2697e0caf4a421c09c4de Mon Sep 17 00:00:00 2001
+From: OpenFOAM Windows Contributors <contributors@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 22:14:46 +1100
+Subject: [PATCH] Build with OpenFOAM 14 and MinGW-w64
+
+- Include <vector> in boundaryLayerCells.C; OpenFOAM 14 headers no
+  longer pull it in.
+- Replace reduce() over a labelList with an element-wise
+  listCombineGather/Scatter; OpenFOAM 14 has no max() for lists.
+- On Windows, link meshLibrary against every library it uses and
+  compile in GNU C++17 mode so MinGW's math.h declares the Bessel
+  functions OpenFOAM's Scalar.H needs.
+---
+ meshLibrary/Make/options                              | 11 ++++++++++-
+ .../boundaryLayers/boundaryLayerCells.C               |  1 +
+ .../classicRefineBoundaryLayersFunctions.C            |  3 ++-
+ .../refineBoundaryLayersFunctions.C                   |  3 ++-
+ 4 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/meshLibrary/Make/options b/meshLibrary/Make/options
+index ed5d99c..c5a8c46 100644
+--- a/meshLibrary/Make/options
++++ b/meshLibrary/Make/options
+@@ -24,8 +24,17 @@ ifeq ($(WM_PROJECT), foam)
+     endif
+ endif
+ 
++CFMESH_STD = -std=c++17
++
++# Windows DLLs must resolve every symbol at link time, and MinGW's math.h
++# declares the Bessel functions OpenFOAM uses only in GNU mode
++ifeq ($(WM_OSTYPE),MSwindows)
++    LIBS = -lmeshTools -ltriSurface -lsurfMesh -lfileFormats $(OMP_FLAGS)
++    CFMESH_STD = -std=gnu++17
++endif
++
+ EXE_INC = \
+-    -std=c++17 \
++    $(CFMESH_STD) \
+     $(OMP_FLAGS) $(CFMESH_MACROS) \
+     -I$(LIB_SRC)/triSurface/lnInclude \
+     \
+diff --git a/meshLibrary/utilities/boundaryLayers/boundaryLayers/boundaryLayerCells.C b/meshLibrary/utilities/boundaryLayers/boundaryLayers/boundaryLayerCells.C
+index a913544..ff1b739 100644
+--- a/meshLibrary/utilities/boundaryLayers/boundaryLayers/boundaryLayerCells.C
++++ b/meshLibrary/utilities/boundaryLayers/boundaryLayers/boundaryLayerCells.C
+@@ -39,6 +39,7 @@ Description
+ #include <map>
+ #include <unordered_map>
+ #include <set>
++#include <vector>
+ 
+ //#define DEBUGLayer
+ 
+diff --git a/meshLibrary/utilities/boundaryLayers/classicCfMesh/classicRefineBoundaryLayers/classicRefineBoundaryLayersFunctions.C b/meshLibrary/utilities/boundaryLayers/classicCfMesh/classicRefineBoundaryLayers/classicRefineBoundaryLayersFunctions.C
+index 93e20c6..6a72f06 100644
+--- a/meshLibrary/utilities/boundaryLayers/classicCfMesh/classicRefineBoundaryLayers/classicRefineBoundaryLayersFunctions.C
++++ b/meshLibrary/utilities/boundaryLayers/classicCfMesh/classicRefineBoundaryLayers/classicRefineBoundaryLayersFunctions.C
+@@ -276,7 +276,8 @@ bool classicRefineBoundaryLayers::analyseLayers()
+     }
+ 
+     //- perform reduction over all processors
+-    reduce(nLayersAtPatch, maxOp<labelList>());
++    Pstream::listCombineGather(nLayersAtPatch, maxEqOp<label>());
++    Pstream::listCombineScatter(nLayersAtPatch);
+ 
+     # ifdef DEBUGLayer
+     Pout << "nLayersAtPatch " << nLayersAtPatch << endl;
+diff --git a/meshLibrary/utilities/boundaryLayers/refineBoundaryLayers/refineBoundaryLayersFunctions.C b/meshLibrary/utilities/boundaryLayers/refineBoundaryLayers/refineBoundaryLayersFunctions.C
+index afc8ae0..7aba07e 100644
+--- a/meshLibrary/utilities/boundaryLayers/refineBoundaryLayers/refineBoundaryLayersFunctions.C
++++ b/meshLibrary/utilities/boundaryLayers/refineBoundaryLayers/refineBoundaryLayersFunctions.C
+@@ -387,7 +387,8 @@ bool refineBoundaryLayers::analyseLayers()
+     }
+ 
+     //- perform reduction over all processors
+-    reduce(nLayersAtPatch, maxOp<labelList>());
++    Pstream::listCombineGather(nLayersAtPatch, maxEqOp<label>());
++    Pstream::listCombineScatter(nLayersAtPatch);
+ 
+     // CFMitch/shared-modern hard no-BL audit.
+     // An explicitly disabled patch must resolve to <= 1 and may never

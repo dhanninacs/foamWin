@@ -23,7 +23,10 @@ for name in libmetisDecomp.dll libscotchDecomp.dll; do
 done
 BIN="$STAGE/OpenFOAM-14/platforms/$OPTIONS/bin"
 # Resolve runtimes from the actual compiler, never silently omit them.
-for dll in libgcc_s_seh-1.dll libstdc++-6.dll; do
+RUNTIMES="libgcc_s_seh-1.dll libstdc++-6.dll"
+# cfMesh uses OpenMP, whose runtime needs winpthreads
+[ -f "$BIN/cartesianMesh.exe" ] && RUNTIMES="$RUNTIMES libgomp-1.dll libwinpthread-1.dll"
+for dll in $RUNTIMES; do
     if [ -n "${WIN_RUNTIME_DIR:-}" ]; then runtime="$WIN_RUNTIME_DIR/$dll"
     else runtime=$("$CXX" -print-file-name="$dll"); fi
     test -f "$runtime" || { echo "Missing compiler runtime: $dll" >&2; exit 1; }
@@ -38,10 +41,11 @@ done
 FIXTURE=tutorials/legacy/incompressible/icoFoam/cavity/cavity
 mkdir -p "$STAGE/OpenFOAM-14/$(dirname "$FIXTURE")"
 cp -a "$SRC/$FIXTURE" "$STAGE/OpenFOAM-14/$FIXTURE"
-cp "$REPO/installer/"{of14-shell.bat,of14-shell.ps1,of14-smoke-test.ps1,of14-mesh-test.ps1,of14-env.ps1,of14-runtime-test.ps1,setup-openfoam14.ps1,LICENSE.txt,OF14-installer.nsi} "$STAGE/"
+cp "$REPO/installer/"{of14-shell.bat,of14-shell.ps1,of14-smoke-test.ps1,of14-mesh-test.ps1,of14-cfmesh-test.ps1,of14-env.ps1,of14-runtime-test.ps1,setup-openfoam14.ps1,LICENSE.txt,OF14-installer.nsi} "$STAGE/"
 mkdir -p "$STAGE/OpenFOAM-14/examples"
 cp -a "$REPO/installer/parallel-mesh" "$STAGE/OpenFOAM-14/examples/parallelMesh"
 cp -a "$REPO/installer/runtime-support" "$STAGE/OpenFOAM-14/examples/runtimeSupport"
+cp -a "$REPO/installer/cfmesh-box" "$STAGE/OpenFOAM-14/examples/cfMeshBox"
 mkdir -p "$STAGE/OpenFOAM-14/tutorials/incompressibleFluid"
 cp -a "$SRC/tutorials/incompressibleFluid/cavity" "$STAGE/OpenFOAM-14/tutorials/incompressibleFluid/cavity"
 cp "$REPO/packaging/WINDOWS-README.md" "$STAGE/README.md"
@@ -49,7 +53,8 @@ mkdir -p "$STAGE/runtime-licenses"
 cp /usr/share/doc/gcc-mingw-w64-x86-64-win32-runtime/copyright "$STAGE/runtime-licenses/gcc-mingw-w64.txt"
 # Real partitioners are linked from separately supplied third-party builds.
 # Do not silently package them without the corresponding license notices.
-if [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/libscotchDecomp.dll" ]; then
+if [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/libscotchDecomp.dll" ] \
+    || [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/msmpi/libptscotchDecomp.dll" ]; then
     : "${SCOTCH_LICENSE_FILE:?Set SCOTCH_LICENSE_FILE to the Scotch license text}"
     test -f "$SCOTCH_LICENSE_FILE"
     mkdir -p "$STAGE/runtime-licenses/scotch"
@@ -67,11 +72,17 @@ if [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/libmetisDecomp.dll" ]; then
     cp -a "$GKLIB_NOTICES_DIR/LICENSE.txt" "$GKLIB_NOTICES_DIR/LICENSES.md" \
         "$GKLIB_NOTICES_DIR/LICENSES" "$STAGE/runtime-licenses/gklib/"
 fi
+if [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/msmpi/libzoltanDecomp.dll" ]; then
+    : "${ZOLTAN_LICENSE_FILE:?Set ZOLTAN_LICENSE_FILE to the Zoltan license text}"
+    test -f "$ZOLTAN_LICENSE_FILE"
+    mkdir -p "$STAGE/runtime-licenses/zoltan"
+    cp "$ZOLTAN_LICENSE_FILE" "$STAGE/runtime-licenses/zoltan/"
+fi
 cp -a "$STAGE/runtime-licenses" "$STAGE/OpenFOAM-14/"
 python3 "$REPO/scripts/verify-windows-imports.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS"
 python3 "$REPO/scripts/stage-gmsh.py" "$STAGE" --cache "${FOAMWIN_DOWNLOAD_CACHE:-$OUT/download-cache}"
 (cd "$STAGE" && makensis -V2 OF14-installer.nsi)
 cp "$STAGE/OF14-win-setup.exe" "$OUT/"
-(cd "$STAGE" && zip -qr "$STAGE/OF14-win.zip" OpenFOAM-14 of14-shell.bat of14-shell.ps1 of14-smoke-test.ps1 of14-mesh-test.ps1 of14-env.ps1 of14-runtime-test.ps1 setup-openfoam14.ps1 README.md LICENSE.txt runtime-licenses gmsh)
+(cd "$STAGE" && zip -qr "$STAGE/OF14-win.zip" OpenFOAM-14 of14-shell.bat of14-shell.ps1 of14-smoke-test.ps1 of14-mesh-test.ps1 of14-cfmesh-test.ps1 of14-env.ps1 of14-runtime-test.ps1 setup-openfoam14.ps1 README.md LICENSE.txt runtime-licenses gmsh)
 cp "$STAGE/OF14-win.zip" "$OUT/"
 echo "Created $OUT/OF14-win-setup.exe and $OUT/OF14-win.zip"

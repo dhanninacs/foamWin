@@ -1,0 +1,19 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object meshDict;
+}
+
+surfaceFile "box.stl";
+maxCellSize 0.1;
+boundaryLayers
+{
+    nLayers 2;
+    thicknessRatio 1.2;
+}
+renameBoundary
+{
+    defaultName walls;
+    defaultType wall;
+}

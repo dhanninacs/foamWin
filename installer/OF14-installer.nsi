@@ -21,7 +21,7 @@ RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 Unicode true
 
-VIProductVersion "14.0.0.4"
+VIProductVersion "14.0.0.5"
 VIAddVersionKey FileDescription " for Windows installer"
 VIAddVersionKey ProductName "${PRODUCT} for Windows"
 VIAddVersionKey CompanyName "${PUBLISHER}"
@@ -58,6 +58,7 @@ Section "!OpenFOAM 14 core (required)" SEC_CORE
     File "of14-shell.ps1"
     File "of14-smoke-test.ps1"
     File "of14-mesh-test.ps1"
+    File "of14-cfmesh-test.ps1"
     File "of14-env.ps1"
     File /r "gmsh"
     File "of14-runtime-test.ps1"
@@ -144,6 +145,7 @@ Section "Uninstall"
     Delete "$INSTDIR\of14-shell.ps1"
     Delete "$INSTDIR\of14-smoke-test.ps1"
     Delete "$INSTDIR\of14-mesh-test.ps1"
+    Delete "$INSTDIR\of14-cfmesh-test.ps1"
     Delete "$INSTDIR\of14-env.ps1"
     RMDir /r "$INSTDIR\gmsh"
     Delete "$INSTDIR\of14-runtime-test.ps1"
