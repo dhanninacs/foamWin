@@ -35,7 +35,7 @@ SourceFiles
 #ifndef primitivePatchIntersection_H
 #define primitivePatchIntersection_H
 
-#include "PatchIntersection.H"
+#include "patchIntersection.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

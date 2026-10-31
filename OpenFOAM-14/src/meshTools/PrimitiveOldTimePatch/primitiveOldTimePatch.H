@@ -32,7 +32,7 @@ Description
 #ifndef primitiveOldTimePatch_H
 #define primitiveOldTimePatch_H
 
-#include "PrimitiveOldTimePatch.H"
+#include "primitiveOldTimePatch.H"
 #include "face.H"
 #include "SubList.H"
 #include "pointField.H"

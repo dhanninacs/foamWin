@@ -40,7 +40,7 @@ SourceFiles
 
 #include "solidThermo.H"
 #include "zonalThermo.H"
-#include "SolidThermo.H"
+#include "solidThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

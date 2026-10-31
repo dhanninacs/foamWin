@@ -76,7 +76,7 @@ Usage
 #include "fvFieldDecomposer.H"
 #include "pointFieldDecomposer.H"
 #include "lagrangianFieldDecomposer.H"
-#include "LagrangianFieldDecomposer.H"
+#include "lagrangianFieldDecomposer.H"
 
 using namespace Foam;
 

@@ -31,7 +31,7 @@ License
 #include "domainDecomposition.H"
 #include "lagrangianFieldReconstructor.H"
 #include "LagrangianMesh.H"
-#include "LagrangianFieldReconstructor.H"
+#include "lagrangianFieldReconstructor.H"
 #include "passiveParticleCloud.H"
 
 // VTK includes

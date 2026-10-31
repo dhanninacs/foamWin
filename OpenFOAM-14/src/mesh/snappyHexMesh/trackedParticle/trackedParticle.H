@@ -37,7 +37,7 @@ SourceFiles
 #define trackedParticle_H
 
 #include "particle.H"
-#include "Cloud.H"
+#include "cloud.H"
 #include "autoPtr.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

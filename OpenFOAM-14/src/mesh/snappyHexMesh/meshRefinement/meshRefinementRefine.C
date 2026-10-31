@@ -35,7 +35,7 @@ License
 #include "fvMeshDistribute.H"
 #include "polyTopoChange.H"
 #include "polyDistributionMap.H"
-#include "Cloud.H"
+#include "cloud.H"
 #include "OBJstream.H"
 #include "cellSet.H"
 #include "meshSearch.H"

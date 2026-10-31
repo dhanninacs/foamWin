@@ -39,7 +39,7 @@ SourceFiles
 #ifndef TriPatchIntersection_H
 #define TriPatchIntersection_H
 
-#include "PatchIntersection.H"
+#include "patchIntersection.H"
 #include "star.H"
 #include "polygonTriangulate.H"
 

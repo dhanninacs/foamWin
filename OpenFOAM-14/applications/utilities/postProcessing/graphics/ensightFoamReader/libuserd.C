@@ -39,7 +39,7 @@ Description
 #include <stdio.h>
 
 #include "IOobjectList.H"
-#include "Cloud.H"
+#include "cloud.H"
 #include "passiveParticle.H"
 #include "volFields.H"
 #include "cellModeller.H"

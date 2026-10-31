@@ -38,7 +38,7 @@ SourceFiles
 #ifndef solidThermo_H
 #define solidThermo_H
 
-#include "SolidThermo.H"
+#include "solidThermo.H"
 #include "pureThermo.H"
 #include "rhoThermo.H"
 #include "uniformGeometricFields.H"

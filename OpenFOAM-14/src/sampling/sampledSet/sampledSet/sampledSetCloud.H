@@ -35,7 +35,7 @@ SourceFiles
 #ifndef sampledSetCloud_H
 #define sampledSetCloud_H
 
-#include "Cloud.H"
+#include "cloud.H"
 #include "sampledSetParticle.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

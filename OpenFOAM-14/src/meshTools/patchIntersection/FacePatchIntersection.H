@@ -37,7 +37,7 @@ SourceFiles
 #ifndef FacePatchIntersection_H
 #define FacePatchIntersection_H
 
-#include "PatchIntersection.H"
+#include "patchIntersection.H"
 #include "triFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

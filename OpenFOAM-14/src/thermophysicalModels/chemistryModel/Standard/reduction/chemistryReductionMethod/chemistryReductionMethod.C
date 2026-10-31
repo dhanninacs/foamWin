@@ -24,7 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "chemistryReductionMethod.H"
-#include "Standard_chemistryModel.H"
+#include "standard_chemistryModel.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 

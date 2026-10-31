@@ -23,8 +23,8 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "NoPreconditioner.H"
-#include "DiagonalPreconditioner.H"
+#include "noPreconditioner.H"
+#include "diagonalPreconditioner.H"
 #include "TDILUPreconditioner.H"
 #include "fieldTypes.H"
 

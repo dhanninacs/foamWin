@@ -57,7 +57,7 @@ Description
 #include "tensorIOField.H"
 #include "labelFieldIOField.H"
 #include "vectorFieldIOField.H"
-#include "Cloud.H"
+#include "cloud.H"
 #include "passiveParticle.H"
 #include "fieldDictionary.H"
 

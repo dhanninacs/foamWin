@@ -36,7 +36,7 @@ SourceFiles
 #define sampledSetParticle_H
 
 #include "particle.H"
-#include "Cloud.H"
+#include "cloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

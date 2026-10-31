@@ -36,7 +36,7 @@ SourceFiles
 #ifndef solidLagrangianThermo_H
 #define solidLagrangianThermo_H
 
-#include "SolidLagrangianThermo.H"
+#include "solidLagrangianThermo.H"
 #include "pureLagrangianThermo.H"
 #include "uniformDimensionedFields.H"
 #include "uniformGeometricFields.H"

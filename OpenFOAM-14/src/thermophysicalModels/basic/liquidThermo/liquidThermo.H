@@ -38,7 +38,7 @@ SourceFiles
 #ifndef liquidThermo_H
 #define liquidThermo_H
 
-#include "LiquidThermo.H"
+#include "liquidThermo.H"
 #include "rhoFluidThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

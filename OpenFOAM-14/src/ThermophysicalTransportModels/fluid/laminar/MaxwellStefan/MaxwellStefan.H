@@ -57,7 +57,7 @@ SourceFiles
 #ifndef MaxwellStefan_H
 #define MaxwellStefan_H
 
-#include "MeshObjects.H"
+#include "meshObjects.H"
 #include "Function2.H"
 #include "LUscalarMatrix.H"
 #include "fvMatricesFwd.H"

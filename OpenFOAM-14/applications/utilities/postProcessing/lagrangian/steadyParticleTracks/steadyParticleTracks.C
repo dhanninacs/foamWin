@@ -32,7 +32,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
-#include "Cloud.H"
+#include "cloud.H"
 #include "IOdictionary.H"
 #include "fvMesh.H"
 #include "Time.H"

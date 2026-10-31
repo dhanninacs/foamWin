@@ -101,7 +101,7 @@ SourceFiles
 #include "solidThermophysicalTransportModel.H"
 #include "coordinateSystem.H"
 #include "PtrDictionary.H"
-#include "MeshObjects.H"
+#include "meshObjects.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
