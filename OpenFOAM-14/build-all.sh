@@ -30,54 +30,28 @@ rm -f "$FOAM_LIBBIN"/libOpenFOAM.*
 (cd src && wmake libso OpenFOAM)
 (cd src/OSspecific/MSwindows/stubLibrary && wmake libso)
 
-# ---- Core libraries -------------------------------------------------------
-cd src
-for lib in fileFormats surfMesh triSurface meshTools; do
-    wmake libso "$lib"
+# ---- Remaining libraries, in upstream src/Allwmake order ------------------
+# wmake is incremental, so the core libraries above are not rebuilt. Some
+# upstream libraries do not build on MinGW yet, so Allwmake continues past a
+# failure and the required-library check below decides the result.
+# A Windows DLL must resolve every symbol at link time, but upstream orders
+# some libraries before their dependencies (dummyThirdParty before
+# decompositionMethods), so a second pass links what the first could not.
+for pass in 1 2; do
+    (cd src && WM_CONTINUE_ON_ERROR=1 ./Allwmake -j "${WM_NCOMPPROCS:-$(nproc)}") || true
 done
-for lib in finiteVolume mesh/extrudeModel lagrangian/basic sampling meshCheck \
-           polyTopoChange parallel/decompose/decompositionMethods; do
-    wmake libso "$lib"
-done
-(cd dummyThirdParty && ./Allwmake) || true
 
-for lib in ODE physicalProperties generic conversion; do
-    wmake libso "$lib"
-done
-# Optional libraries: a failure is recorded and listed at the end, never hidden.
-# Libraries that cannot be built on MinGW yet are listed in the report, not here.
-FAILED_LIBS=()
-optional() {
-    if ! wmake libso "$@"; then
-        echo "!!! FAILED: $*"
-        FAILED_LIBS+=("$*")
-    fi
-}
+# ---- Check ------------------------------------------------------------------
+# build-required-libs.txt lists every src library the Windows packages need.
+missing=()
+while read -r lib; do
+    [ -f "$FOAM_LIBBIN/$lib.dll" ] || [ -f "$FOAM_LIBBIN/dummy/$lib.dll" ] \
+        || missing+=("$lib")
+done < build-required-libs.txt
 
-optional thermophysicalModels
-optional lagrangian/basic
-optional motionSolvers
-optional fvMeshStitchers fvMeshMovers fvMeshTopoChangers fvMeshDistributors
-optional randomProcesses
-optional twoPhaseModels multiphaseModels MomentumTransportModels \
-          ThermophysicalTransportModels radiationModels combustionModels
-optional mesh
-
-# Run-time selected constraint and model libraries. Built after their
-# dependencies (thermophysical and transport models above).
-optional fvConstraints
-optional fvModels/general
-optional fvModels/interRegion
-
-# Libraries the solver and module builds link against. Built with plain wmake,
-# so a failure stops the build here rather than being recorded as optional.
-wmake libso lagrangian/molecularDynamics
-wmake libso atmosphericModels
-wmake libso waves
-
-echo "=== Library build complete ==="
-ls -la "$FOAM_LIBBIN"/*.dll | wc -l
-if [ "${#FAILED_LIBS[@]}" -gt 0 ]; then
-    echo "=== Optional libraries that did not build ==="
-    printf '  %s\n' "${FAILED_LIBS[@]}"
+echo "=== Library build complete: $(ls "$FOAM_LIBBIN"/*.dll | wc -l) libraries ==="
+if [ "${#missing[@]}" -gt 0 ]; then
+    echo "=== Required libraries that did not build ==="
+    printf '  %s\n' "${missing[@]}"
+    exit 1
 fi
