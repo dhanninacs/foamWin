@@ -43,18 +43,19 @@ The script defaults to `%LOCALAPPDATA%/OpenFOAM-14-win`; `-InstallDir` changes i
 and `-NoShortcut` disables the desktop shortcut. The GUI installer offers MSYS2
 as an optional component; it is not needed by the native launcher.
 
-## Validation on 20 October 2026
+## Validation on 31 October 2026
 
-The original 85 executables passed `-help` on Windows; import checks now cover all 91 executables with both MPI backends. The cavity case passed blockMesh,
-checkMesh (Mesh OK), and icoFoam through time 0.5. This is a smoke test, not
-validation of every solver or physical model.
+All 151 executables passed `-help` on Windows, and import checks cover them
+with both MPI backends. The cavity case passed blockMesh, checkMesh (Mesh OK),
+and icoFoam through time 0.5, serially and on four MPI processes. This is a
+smoke test, not validation of every solver or physical model.
 
-The package includes the GCC 13 Win32 runtimes used for this validation and
-libstack_trace.dll. The legacy particle library is named liblagrangOld.dll to
+The package includes the GCC 13 Win32 runtimes used for this validation. The
+stack-trace helper is linked into libOpenFOAM.dll. The legacy particle library is named liblagrangOld.dll to
 avoid Windows' case-insensitive collision with modern libLagrangian.dll.
 OpenFOAM constructor initialization order is corrected for MinGW.
 
-Serial only; no bundled ParaView. Runtime code compilation needs additional
+No bundled ParaView. Runtime code compilation needs additional
 compiler setup. See the source repository for GPLv3 source and porting notes.
 
 
