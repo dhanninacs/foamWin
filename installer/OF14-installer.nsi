@@ -21,7 +21,7 @@ RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 Unicode true
 
-VIProductVersion "14.0.0.3"
+VIProductVersion "14.0.0.4"
 VIAddVersionKey FileDescription " for Windows installer"
 VIAddVersionKey ProductName "${PRODUCT} for Windows"
 VIAddVersionKey CompanyName "${PUBLISHER}"

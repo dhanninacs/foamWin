@@ -50,6 +50,19 @@ cross-compile for Windows with MinGW-w64. See also git history inside
   `WM_COMPILER_ARCH=x86_64-w64-mingw32`.
 - Two-pass `Pstream`: static first, then shared; delete and relink
   `libOpenFOAM.dll` (see `build-all.sh`).
+- `third-party/stack_trace` is built as a static library (`wmake lib`).
+  It is built before `libOpenFOAM.dll` exists, so a shared build cannot
+  resolve `-lOpenFOAM -lPstream`.
+- Build and commit from a case-sensitive checkout (WSL ext4). Upstream
+  ships 91 file pairs that differ only in case (for example
+  `PrimitivePatch/PrimitivePatch.H` and `primitivePatch/primitivePatch.H`)
+  and the build needs both. On NTFS each pair is one file on disk, so
+  staging from a Windows checkout overwrites one casing with the other.
+- After the core, `build-all.sh` runs upstream `src/Allwmake` twice with
+  `WM_CONTINUE_ON_ERROR`. The dummy decomposition libraries link
+  `-ldecompositionMethods`, which upstream builds later, so they link on
+  the second pass. `build-required-libs.txt` lists the libraries that
+  must exist afterwards.
 
 ## 6. Library dependency fixes (Windows has no transitive link)
 Because MinGW's `ld` needs explicit `-l` for each symbol provider, many

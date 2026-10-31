@@ -1,5 +1,9 @@
-# Unreleased
+# v14.0.0-win.4 — Runtime registration and clean rebuild
 
+- Restore 91 source files that differ from another file only in case. A commit made from a Windows checkout had overwritten them with the other casing's content, which broke the library build. The tree now rebuilds cleanly from the repository.
+- Build the stack-trace helper as a static library so a clean build no longer fails before `libOpenFOAM.dll` exists.
+- Build the remaining libraries with upstream `src/Allwmake`, run twice so libraries that upstream orders before their dependencies still link on Windows. `build-all.sh` now fails if any library the packages need is missing.
+- Add the cross-built zlib headers to the MinGW compile flags.
 - Correct Windows runtime registration for recovered solver modules, coupled temperature and film patches, and wall-function fields in mesh utilities.
 - Correct the condenser tutorial's multiphase model library name.
 - Normalize Windows executable paths and `mapFields` source paths, and encode reserved characters in function-object output directory names.
