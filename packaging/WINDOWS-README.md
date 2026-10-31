@@ -1,6 +1,7 @@
 # FoamWin — OpenFOAM 14 for Windows
 
-64-bit Windows executables, double precision, 32-bit labels, serial execution.
+64-bit Windows executables, double precision, 32-bit labels, serial or local
+parallel execution with Microsoft MPI.
 The PowerShell launcher runs without MSYS2 or WSL. Building from source still
 requires a Linux MinGW-w64 cross compiler.
 
@@ -45,10 +46,13 @@ as an optional component; it is not needed by the native launcher.
 
 ## Validation on 31 October 2026
 
-All 151 executables passed `-help` on Windows, and import checks cover them
+All 176 executables passed `-help` on Windows, and import checks cover them
 with both MPI backends. The cavity case passed blockMesh, checkMesh (Mesh OK),
-and icoFoam through time 0.5, serially and on four MPI processes. This is a
-smoke test, not validation of every solver or physical model.
+and icoFoam through time 0.5, serially and on four MPI processes. Scotch and
+METIS decomposed it into four parts, and PT-Scotch and Zoltan redistributed it
+on four MPI processes. cfMesh's cartesianMesh, tetMesh and pMesh meshed the
+included cube and passed checkMesh. These are smoke tests, not validation of
+every solver, mesher or physical model.
 
 The package includes the GCC 13 Win32 runtimes used for this validation. The
 stack-trace helper is linked into libOpenFOAM.dll. The legacy particle library is named liblagrangOld.dll to
@@ -75,13 +79,28 @@ From the extracted package directory, run these validated examples:
 ```
 
 For your own case, set `numberOfSubdomains` in `system/decomposeParDict` to match
-`-Processes`, select `simple` or `hierarchical`, then run `decomposePar`.
+`-Processes`, select a `method`, then run `decomposePar`.
 Use `Invoke-FoamWinParallel -Processes 4 -Application icoFoam -Case <case-folder>`
 (or your solver). Run `reconstructPar -latestTime` afterwards.
 `snappyHexMesh` supports the same helper; `blockMesh` remains serial.
 The mesh example includes parallel refinement, mesh reconstruction, and quality checks.
-Scotch and Metis partitioners are not included. Local runs on two and four processes
-have been validated; multi-host operation and performance scaling have not been tested.
+Local runs on two and four processes have been validated; multi-host operation and
+performance scaling have not been tested.
+
+Besides `simple`, `hierarchical`, `manual` and `random`, the `scotch` and `metis`
+graph partitioners work with `decomposePar`, and `ptscotch` and `zoltan` work for
+parallel redistribution (`redistributePar`) and load balancing under Microsoft MPI.
+Their license texts are in `runtime-licenses`.
+
+## cfMesh
+
+cfMesh is included: `cartesianMesh`, `tetMesh`, `pMesh`, `cartesian2DMesh`,
+`generateBoundaryLayers`, `improveMeshQuality` and its surface utilities. Run
+`./of14-cfmesh-test.ps1` to mesh the included cube (`examples/cfMeshBox`) with two
+boundary layers and check the result. STL patches without a type are read as
+`empty`; set their type with a `renameBoundary` entry in `meshDict`, as the example
+does. cfMesh is built from the open-source cfMesh-OpenFOAM13 fork with patches for
+OpenFOAM 14; see the source repository.
 
 ## Attaching a CFD application
 
@@ -91,5 +110,5 @@ JSON environment and tool inventory for a Windows host adapter; no Bash is neede
 Run `./of14-runtime-test.ps1` to validate feature extraction, modern solving,
 velocity post-processing and VTK export. See the source repository's
 [attachment guide](https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md)
-for the interface and Windows runner requirements. The GUI application, CAD/VTK
-Python dependencies, cfMesh and Gmsh generation are separate from this engine.
+for the interface and Windows runner requirements. The GUI application and CAD/VTK
+Python dependencies are separate from this engine.

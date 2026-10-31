@@ -61,8 +61,10 @@ See [Windows usage](packaging/WINDOWS-README.md) for installation and path detai
 
 Native Windows testing covered:
 
-- Startup checks for **all 91 packaged executables**.
+- Startup checks for **all packaged executables**.
 - The legacy cavity example: mesh generation, `Mesh OK`, and icoFoam through 0.5 s.
+- Scotch and METIS decomposition, PT-Scotch and Zoltan parallel redistribution.
+- cfMesh `cartesianMesh` with boundary layers, passing `checkMesh`.
 - The modern incompressibleFluid cavity with `foamRun` through time 10.
 - Actual installation, installed-package execution, and the Desktop shortcut.
 - Installation/case paths with spaces, runtime DLL imports, and ZIP integrity.
@@ -75,8 +77,8 @@ These are execution and smoke tests, not exhaustive physical-model benchmarks.
 - **64-bit Windows**, double precision, 32-bit labels.
 - ParaView is not bundled.
 - Runtime code compilation needs additional compiler configuration.
-- A full clean rebuild of every source component was not performed during the
-  runtime repair; the build driver still needs its external regex/zlib dependencies.
+- The build needs its external zlib dependency, and the partitioners and cfMesh
+  need their separately cloned sources (see below).
 
 ## Source and packaging
 
@@ -103,6 +105,7 @@ Packaging validates imports and produces fresh EXE/ZIP distributions.
 | `third-party/stack_trace/` | Windows stack-trace helper source |
 | `installer/` | Native launcher, smoke test, and installer definitions |
 | `scripts/` | Build/packaging helpers and validation checks |
+| `patches/cfmesh/` | Patches applied to the cfMesh fork for OpenFOAM 14 and MinGW |
 | `packaging/` | Windows usage, packaging, and repair documentation |
 
 See [porting notes](PORTING-NOTES.md), [repair details](packaging/WINDOWS-REPAIR.md),
@@ -146,17 +149,45 @@ From the extracted package directory, run these validated examples:
 ```
 
 For your own case, set `numberOfSubdomains` in `system/decomposeParDict` to match
-`-Processes`, select `simple` or `hierarchical`, then run `decomposePar`.
+`-Processes`, select a `method` (see below), then run `decomposePar`.
 Use `Invoke-FoamWinParallel -Processes 4 -Application icoFoam -Case <case-folder>`
 (or your solver). Run `reconstructPar -latestTime` afterwards.
 `snappyHexMesh` supports the same helper; `blockMesh` remains serial.
 The mesh example includes parallel refinement, mesh reconstruction, and quality checks.
-Scotch and Metis partitioners are not included. Local runs on two and four processes
-have been validated; multi-host operation and performance scaling have not been tested.
+Local runs on two and four processes have been validated; multi-host operation and
+performance scaling have not been tested.
 
 To build the MPI additions after a serial cross-build, run
 `scripts/build-msmpi.sh <extracted-msmpi-sdk-directory>` on Linux.
 The SDK must contain `mpi.h` and the x64 `msmpi64.lib`; SDK files are not committed.
+
+## Partitioners
+
+Besides the built-in `simple`, `hierarchical`, `manual` and `random` methods, the
+packages include the graph partitioners:
+
+| Method | Library | Use |
+|---|---|---|
+| `scotch`, `metis` | Scotch 7.0.12, METIS 5.2.1 with GKlib | `decomposePar`, serial or parallel |
+| `ptscotch`, `zoltan` | PT-Scotch 7.0.12, Zoltan 3.90 | Parallel redistribution and load balancing (MS-MPI) |
+
+`scripts/test-windows-partitioners.ps1 -RuntimeRoot <package> -OutputDirectory <new-folder> -Processes 4`
+checks all four. To build them, cross-build the third-party sources with
+`scripts/build-thirdparty-partitioners.sh` (Scotch and Zoltan from OpenFOAM's
+ThirdParty-14 repository, METIS and GKlib from KarypisLab), then run
+`scripts/build-partitioners.sh` with the paths it prints. Their license texts are
+packaged under `runtime-licenses`.
+
+## cfMesh
+
+The packages include cfMesh (`cartesianMesh`, `tetMesh`, `pMesh`, `cartesian2DMesh`,
+`generateBoundaryLayers`, `improveMeshQuality` and the surface utilities), built
+from the [cfMesh-OpenFOAM13 fork](https://github.com/Ultravis66/cfMesh-OpenFOAM13)
+at commit `2e36fe7` with `patches/cfmesh` applied for OpenFOAM 14 and MinGW.
+Run `./of14-cfmesh-test.ps1` to mesh the included cube with boundary layers and
+check it. To build it, run `scripts/build-cfmesh.sh` with `CFMESH_SOURCE` set to a
+clone of the fork. STL patches without a type are read as `empty`; set their type
+with a `renameBoundary` entry in `meshDict`, as the example does.
 
 ## Attaching a CFD application
 
@@ -166,5 +197,5 @@ JSON environment and tool inventory for a Windows host adapter; no Bash is neede
 Run `./of14-runtime-test.ps1` to validate feature extraction, modern solving,
 velocity post-processing and VTK export. See the source repository's
 [attachment guide](https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md)
-for the interface and Windows runner requirements. The GUI application, CAD/VTK
-Python dependencies, cfMesh and Gmsh generation are separate from this engine.
+for the interface and Windows runner requirements. The GUI application and CAD/VTK
+Python dependencies are separate from this engine.

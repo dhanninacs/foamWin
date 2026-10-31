@@ -1,3 +1,13 @@
+# v14.0.0-win.5 — Graph partitioners and cfMesh
+
+- Ship the Scotch and METIS partitioners for `decomposePar`, and PT-Scotch and Zoltan for parallel redistribution and load balancing under Microsoft MPI. Their license texts are packaged under `runtime-licenses`.
+- `build-thirdparty-partitioners.sh` also cross-builds PT-Scotch and Zoltan against MS-MPI, and `build-partitioners.sh` builds their adapters into `lib/msmpi`.
+- Load any optional partitioner library on demand on Windows, where an unreferenced DLL is never loaded. Previously only `metis` and `scotch` decomposers and the `scotch` distributor were found.
+- Link the PT-Scotch and Zoltan adapters against their dependencies on Windows, without Linux's `-lrt`.
+- The import check resolves DLLs in the launcher's `PATH` order for each MPI backend, so a real partitioner in `lib/msmpi` may shadow the stub in `lib/dummy`.
+- Ship cfMesh (`cartesianMesh`, `tetMesh`, `pMesh`, `cartesian2DMesh`, `generateBoundaryLayers`, `improveMeshQuality` and its surface utilities), built from the cfMesh-OpenFOAM13 fork with `patches/cfmesh` for OpenFOAM 14 and MinGW, plus `libgomp-1.dll` for its OpenMP threads.
+- Add `of14-cfmesh-test.ps1` and the `cfMeshBox` example, and extend `test-windows-partitioners.ps1` to PT-Scotch and Zoltan.
+
 # v14.0.0-win.4 — Runtime registration and clean rebuild
 
 - Restore 91 source files that differ from another file only in case. A commit made from a Windows checkout had overwritten them with the other casing's content, which broke the library build. The tree now rebuilds cleanly from the repository.

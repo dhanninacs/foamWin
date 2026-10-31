@@ -54,7 +54,9 @@ from case names, parameters or executable paths.
 
 The legacy `surfaceFeatureExtract` shell wrapper is not supplied; invoke
 `surfaceFeatures` with a Foundation 14 `surfaceFeaturesDict`. Gmsh mesh import
-is available; the Gmsh mesher itself is separate. cfMesh, custom coupled solvers,
+is available; the Gmsh mesher itself is separate. cfMesh (`cartesianMesh`,
+`tetMesh`, `pMesh`) and the Scotch, METIS, PT-Scotch and Zoltan partitioners are
+included. Custom coupled solvers,
 ParaView, Python/VTK and CAD kernels are separate optional dependencies, not
 requirements for the current Foundation incompressible workflow. A catalogue
 entry for a future backend is not evidence that the backend is supported.

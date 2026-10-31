@@ -115,6 +115,16 @@ Split into three files and updated `Make/files`:
 ## 9. Third-party
 - `libgnurx` / `libregex` for POSIX `regex.h` functionality.
 - `stack_trace` (blueCFD) wraps `dbghelp` for `error::printStack`.
+- Partitioners: Scotch 7.0.12 and Zoltan 3.90 from OpenFOAM's ThirdParty-14,
+  METIS 5.2.1 (KarypisLab commit `272d4a9`) with GKlib (`3b7d61b`). PT-Scotch and
+  Zoltan are built against MS-MPI (`-DMSMPI_NO_SAL`) and their adapters go to
+  `lib/msmpi`, which the launcher puts ahead of `lib/dummy` in parallel mode.
+- A DLL whose only use is static registration is not loaded on Windows, so
+  `decompositionMethod` opens `lib<method>Decomp` for the optional partitioners.
+- cfMesh: `patches/cfmesh` adds `<vector>`, replaces `reduce()` over a
+  `labelList` (no list `max()` in OpenFOAM 14), and on MinGW links `meshLibrary`
+  explicitly and compiles it as `gnu++17`, since strict C++17 hides the Bessel
+  functions that `Scalar.H` uses. OpenMP needs `libgomp-1.dll` at run time.
 
 ## 10. Applications / link ordering
 - All executables need explicit `EXE_LIBS`; nothing implicit.
