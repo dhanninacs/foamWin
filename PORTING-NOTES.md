@@ -63,6 +63,9 @@ cross-compile for Windows with MinGW-w64. See also git history inside
   `-ldecompositionMethods`, which upstream builds later, so they link on
   the second pass. `build-required-libs.txt` lists the libraries that
   must exist afterwards.
+- `src/lagrangian/Allwmake` skips `functionObjects` on MinGW: its
+  `liblagrangianFunctionObjects.dll` differs only in case from
+  `libLagrangianFunctionObjects.dll`, and Windows cannot hold both.
 
 ## 6. Library dependency fixes (Windows has no transitive link)
 Because MinGW's `ld` needs explicit `-l` for each symbol provider, many

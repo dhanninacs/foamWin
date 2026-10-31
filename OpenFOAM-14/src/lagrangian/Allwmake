@@ -9,6 +9,9 @@ wmake $targetType solidParticle
 wmake $targetType parcel
 wmake $targetType DSMC
 wmake $targetType molecularDynamics
-wmake $targetType functionObjects
+
+# Windows file names ignore case, so liblagrangianFunctionObjects would clash
+# with libLagrangianFunctionObjects from src/Lagrangian
+[ "$WM_ARCH" = linuxmingw-w64 ] || wmake $targetType functionObjects
 
 #------------------------------------------------------------------------------

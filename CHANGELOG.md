@@ -4,6 +4,8 @@
 - Build the stack-trace helper as a static library so a clean build no longer fails before `libOpenFOAM.dll` exists.
 - Build the remaining libraries with upstream `src/Allwmake`, run twice so libraries that upstream orders before their dependencies still link on Windows. `build-all.sh` now fails if any library the packages need is missing.
 - Add the cross-built zlib headers to the MinGW compile flags.
+- Ship libraries the previous hand-written build list missed: forces, rigid-body and six-DoF motion, propeller disk, solid particles, specie transfer, and the solver and utility function objects.
+- Skip the legacy `liblagrangianFunctionObjects` on Windows, where its name clashes with `libLagrangianFunctionObjects`.
 - Correct Windows runtime registration for recovered solver modules, coupled temperature and film patches, and wall-function fields in mesh utilities.
 - Correct the condenser tutorial's multiphase model library name.
 - Normalize Windows executable paths and `mapFields` source paths, and encode reserved characters in function-object output directory names.
