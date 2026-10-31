@@ -44,7 +44,7 @@ SourceFiles
 #ifndef CellZoneInjection_H
 #define CellZoneInjection_H
 
-#include "InjectionModel.H"
+#include "injectionModel.H"
 #include "distribution.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

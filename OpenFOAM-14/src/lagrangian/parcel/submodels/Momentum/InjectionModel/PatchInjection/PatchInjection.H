@@ -46,7 +46,7 @@ SourceFiles
 #ifndef PatchInjection_H
 #define PatchInjection_H
 
-#include "InjectionModel.H"
+#include "injectionModel.H"
 #include "patchInjectionBase.H"
 #include "Function1.H"
 #include "interpolation.H"

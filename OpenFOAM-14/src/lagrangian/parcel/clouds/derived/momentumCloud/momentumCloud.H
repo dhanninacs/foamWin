@@ -32,9 +32,9 @@ Description
 #ifndef momentumCloud_H
 #define momentumCloud_H
 
-#include "ParcelCloudBase.H"
+#include "parcelCloudBase.H"
 #include "MomentumCloud.H"
-#include "ParcelCloud.H"
+#include "parcelCloud.H"
 #include "momentumParcel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

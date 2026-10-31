@@ -26,7 +26,7 @@ License
 #include "MomentumParcel.H"
 #include "IOstreams.H"
 #include "IOField.H"
-#include "Cloud.H"
+#include "cloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 

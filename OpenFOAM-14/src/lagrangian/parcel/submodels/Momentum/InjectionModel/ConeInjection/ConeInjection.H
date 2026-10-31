@@ -143,7 +143,7 @@ SourceFiles
 #ifndef ConeInjection_H
 #define ConeInjection_H
 
-#include "InjectionModel.H"
+#include "injectionModel.H"
 #include "distribution.H"
 #include "Function1.H"
 

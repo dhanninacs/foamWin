@@ -35,7 +35,7 @@ SourceFiles
 #ifndef NoInjection_H
 #define NoInjection_H
 
-#include "InjectionModel.H"
+#include "injectionModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
