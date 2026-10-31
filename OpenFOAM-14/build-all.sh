@@ -55,3 +55,8 @@ if [ "${#missing[@]}" -gt 0 ]; then
     printf '  %s\n' "${missing[@]}"
     exit 1
 fi
+
+# ---- Applications: solvers, modules, legacy, utilities ----------------------
+export ParaView_TYPE=none
+(cd applications && ./Allwmake -j "${WM_NCOMPPROCS:-$(nproc)}")
+echo "=== Application build complete: $(ls "$FOAM_APPBIN" | wc -l) executables ==="

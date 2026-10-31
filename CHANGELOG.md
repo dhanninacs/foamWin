@@ -6,6 +6,7 @@
 - Add the cross-built zlib headers to the MinGW compile flags.
 - Ship libraries the previous hand-written build list missed: forces, rigid-body and six-DoF motion, propeller disk, solid particles, specie transfer, and the solver and utility function objects.
 - Skip the legacy `liblagrangianFunctionObjects` on Windows, where its name clashes with `libLagrangianFunctionObjects`.
+- Build the applications from `build-all.sh` with upstream `applications/Allwmake`. This adds the legacy solvers, including `icoFoam`, which the bundled smoke test runs but earlier packages did not contain.
 - Correct Windows runtime registration for recovered solver modules, coupled temperature and film patches, and wall-function fields in mesh utilities.
 - Correct the condenser tutorial's multiphase model library name.
 - Normalize Windows executable paths and `mapFields` source paths, and encode reserved characters in function-object output directory names.
