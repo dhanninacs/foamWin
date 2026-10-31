@@ -36,7 +36,7 @@ SourceFiles
 #ifndef URhoFluidMulticomponentThermo_H
 #define URhoFluidMulticomponentThermo_H
 
-#include "rhoFluidThermo.H"
+#include "RhoFluidThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

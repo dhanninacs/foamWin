@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "standard_chemistryModel.H"
+#include "Standard_chemistryModel.H"
 #include "makeChemistryModel.H"
 
 #include "forGases.H"

@@ -46,7 +46,7 @@ SourceFiles
 #include "dimensionedTypes.H"
 #include "fvMesh.H"
 #include "fluidThermo.H"
-#include "cloud.H"
+#include "Cloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

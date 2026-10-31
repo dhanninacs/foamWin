@@ -40,7 +40,7 @@ SourceFiles
 
 #include "fluidThermo.H"
 #include "multicomponentThermo.H"
-#include "fluidMulticomponentThermo.H"
+#include "FluidMulticomponentThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -32,10 +32,10 @@ Description
 #ifndef thermoCloud_H
 #define thermoCloud_H
 
-#include "parcelCloudBase.H"
+#include "ParcelCloudBase.H"
 #include "MomentumCloud.H"
 #include "ThermoCloud.H"
-#include "parcelCloud.H"
+#include "ParcelCloud.H"
 #include "thermoParcel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -48,7 +48,7 @@ SourceFiles
 #define cutPoly_H
 
 #include "cellEdgeAddressing.H"
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

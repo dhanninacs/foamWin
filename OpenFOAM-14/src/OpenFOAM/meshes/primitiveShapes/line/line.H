@@ -36,7 +36,7 @@ SourceFiles
 #define line_H
 
 #include "vector.H"
-#include "pointHit.H"
+#include "PointHit.H"
 #include "point2D.H"
 #include "FixedList.H"
 #include "UList.H"

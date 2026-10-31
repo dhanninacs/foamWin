@@ -33,7 +33,7 @@ SourceFiles
 #define ensightOutputFunctions_H
 
 #include "ensightFile.H"
-#include "cloud.H"
+#include "Cloud.H"
 #include "polyMesh.H"
 #include "IOobject.H"
 

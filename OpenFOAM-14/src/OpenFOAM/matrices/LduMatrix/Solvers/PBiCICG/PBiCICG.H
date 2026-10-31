@@ -36,7 +36,7 @@ SourceFiles
 #ifndef PBiCICG_H
 #define PBiCICG_H
 
-#include "lduMatrix.H"
+#include "LduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

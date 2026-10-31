@@ -38,7 +38,7 @@ SourceFiles
 #ifndef psiThermo_H
 #define psiThermo_H
 
-#include "psiThermo.H"
+#include "PsiThermo.H"
 #include "pureThermo.H"
 #include "fluidThermo.H"
 

@@ -54,7 +54,7 @@ SourceFiles
 #ifndef MomentumLookupTableInjection_H
 #define MomentumLookupTableInjection_H
 
-#include "injectionModel.H"
+#include "InjectionModel.H"
 #include "momentumParcelInjectionDataIOList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

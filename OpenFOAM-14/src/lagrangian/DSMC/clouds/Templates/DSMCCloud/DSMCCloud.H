@@ -36,7 +36,7 @@ SourceFiles
 #ifndef DSMCCloud_H
 #define DSMCCloud_H
 
-#include "cloud.H"
+#include "Cloud.H"
 #include "IOdictionary.H"
 #include "autoPtr.H"
 #include "randomGenerator.H"

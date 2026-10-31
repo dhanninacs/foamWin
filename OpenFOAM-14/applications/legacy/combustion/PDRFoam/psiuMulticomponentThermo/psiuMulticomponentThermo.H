@@ -40,7 +40,7 @@ SourceFiles
 #define psiuMulticomponentThermo_H
 
 #include "psiThermo.H"
-#include "psiuMulticomponentThermo.H"
+#include "PsiuMulticomponentThermo.H"
 #include "speciesTable.H"
 #include "DimensionedFieldListSlicer.H"
 #include "GeometricFieldListSlicer.H"

@@ -32,7 +32,7 @@ Description
 #ifndef uindirectPrimitivePatch_H
 #define uindirectPrimitivePatch_H
 
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "face.H"
 #include "UIndirectList.H"
 #include "pointField.H"

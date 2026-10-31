@@ -35,7 +35,7 @@ SourceFiles
 #ifndef polyPatchIntersection_H
 #define polyPatchIntersection_H
 
-#include "patchIntersection.H"
+#include "PatchIntersection.H"
 #include "polyPatch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

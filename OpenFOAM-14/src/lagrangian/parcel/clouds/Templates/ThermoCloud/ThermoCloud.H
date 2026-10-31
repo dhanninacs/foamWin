@@ -44,7 +44,7 @@ SourceFiles
 #include "dimensionedTypes.H"
 #include "fvMesh.H"
 #include "parcelThermo.H"
-#include "cloud.H"
+#include "Cloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

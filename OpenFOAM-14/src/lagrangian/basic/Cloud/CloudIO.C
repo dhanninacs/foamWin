@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "cloud.H"
+#include "Cloud.H"
 #include "Time.H"
 #include "IOPosition.H"
 #include "timeIOdictionary.H"

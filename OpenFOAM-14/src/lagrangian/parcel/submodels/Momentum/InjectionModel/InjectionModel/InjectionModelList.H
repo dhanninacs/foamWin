@@ -36,7 +36,7 @@ SourceFiles
 #define InjectionModelList_H
 
 #include "PtrList.H"
-#include "injectionModel.H"
+#include "InjectionModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

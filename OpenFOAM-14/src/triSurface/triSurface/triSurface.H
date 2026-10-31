@@ -36,7 +36,7 @@ SourceFiles
 #define triSurface_H
 
 #include "triSurfacePointMesh.H"
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "pointField.H"
 #include "labelledTri.H"
 #include "boolList.H"

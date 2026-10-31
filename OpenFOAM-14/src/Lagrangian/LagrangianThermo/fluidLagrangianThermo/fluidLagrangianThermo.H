@@ -36,7 +36,7 @@ SourceFiles
 #ifndef fluidLagrangianThermo_H
 #define fluidLagrangianThermo_H
 
-#include "fluidLagrangianThermo.H"
+#include "FluidLagrangianThermo.H"
 #include "pureLagrangianThermo.H"
 #include "uniformDimensionedFields.H"
 #include "uniformGeometricFields.H"

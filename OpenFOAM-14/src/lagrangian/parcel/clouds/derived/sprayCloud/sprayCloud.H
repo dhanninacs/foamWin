@@ -32,12 +32,12 @@ Description
 #ifndef sprayCloud_H
 #define sprayCloud_H
 
-#include "parcelCloudBase.H"
+#include "ParcelCloudBase.H"
 #include "MomentumCloud.H"
 #include "ThermoCloud.H"
 #include "ReactingCloud.H"
 #include "SprayCloud.H"
-#include "parcelCloud.H"
+#include "ParcelCloud.H"
 #include "sprayParcel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

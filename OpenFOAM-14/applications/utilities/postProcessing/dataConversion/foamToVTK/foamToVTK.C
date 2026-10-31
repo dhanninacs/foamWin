@@ -145,7 +145,7 @@ Usage
 #include "symmTensorIOField.H"
 #include "tensorIOField.H"
 #include "faceZoneList.H"
-#include "cloud.H"
+#include "Cloud.H"
 #include "passiveParticle.H"
 #include "stringListOps.H"
 

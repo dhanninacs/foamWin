@@ -36,7 +36,7 @@ SourceFiles
 #ifndef moleculeCloud_H
 #define moleculeCloud_H
 
-#include "cloud.H"
+#include "Cloud.H"
 #include "molecule.H"
 #include "IOdictionary.H"
 #include "potential.H"

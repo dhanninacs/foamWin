@@ -37,7 +37,7 @@ SourceFiles
 #define multicomponentLagrangianThermo_H
 
 #include "basicLagrangianThermo.H"
-#include "multicomponentLagrangianThermo.H"
+#include "MulticomponentLagrangianThermo.H"
 #include "speciesTable.H"
 #include "DimensionedFieldListSlicer.H"
 

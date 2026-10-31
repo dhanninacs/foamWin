@@ -36,7 +36,7 @@ SourceFiles
 #ifndef PCICG_H
 #define PCICG_H
 
-#include "lduMatrix.H"
+#include "LduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

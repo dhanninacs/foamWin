@@ -25,9 +25,9 @@ License
 
 #include "bRhoMulticomponentThermo.H"
 
-#include "bHomogeneousMixture.H"
-#include "bInhomogeneousMixture.H"
-#include "bMulticomponentMixture.H"
+#include "BHomogeneousMixture.H"
+#include "BInhomogeneousMixture.H"
+#include "BMulticomponentMixture.H"
 
 #include "forGases.H"
 

@@ -39,7 +39,7 @@ SourceFiles
 
 #include "scalarField.H"
 #include "PackedBoolList.H"
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "transformer.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

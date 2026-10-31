@@ -42,7 +42,7 @@ Description
 #include "fvMesh.H"
 #include "fluidThermo.H"
 #include "globalIndex.H"
-#include "cloud.H"
+#include "Cloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

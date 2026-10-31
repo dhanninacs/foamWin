@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "lduMatrix.H"
+#include "LduMatrix.H"
 #include "diagTensorField.H"
 #include "Residuals.H"
 

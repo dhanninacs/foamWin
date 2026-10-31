@@ -34,7 +34,7 @@ License
 #include "fvMeshSubset.H"
 #include "lagrangianFieldReconstructor.H"
 #include "LagrangianMesh.H"
-#include "lagrangianFieldReconstructor.H"
+#include "LagrangianFieldReconstructor.H"
 #include "uindirectPrimitivePatch.H"
 
 // VTK includes

@@ -26,7 +26,7 @@ License
 #include "DSMCParcel.H"
 #include "IOstreams.H"
 #include "IOField.H"
-#include "cloud.H"
+#include "Cloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 

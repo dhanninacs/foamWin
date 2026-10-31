@@ -25,10 +25,10 @@ License
 
 #include "uRhoMulticomponentThermo.H"
 
-#include "uHomogeneousMixture.H"
-#include "uInhomogeneousMixture.H"
-#include "uInhomogeneousEGRMixture.H"
-#include "uMulticomponentMixture.H"
+#include "UHomogeneousMixture.H"
+#include "UInhomogeneousMixture.H"
+#include "UInhomogeneousEGRMixture.H"
+#include "UMulticomponentMixture.H"
 
 #include "forGases.H"
 

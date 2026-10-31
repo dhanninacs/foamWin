@@ -26,7 +26,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "SLList.H"
 #include "ListOps.H"
 

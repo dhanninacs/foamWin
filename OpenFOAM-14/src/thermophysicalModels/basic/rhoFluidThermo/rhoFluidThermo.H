@@ -38,7 +38,7 @@ SourceFiles
 #ifndef rhoFluidThermo_H
 #define rhoFluidThermo_H
 
-#include "rhoFluidThermo.H"
+#include "RhoFluidThermo.H"
 #include "pureThermo.H"
 #include "rhoThermo.H"
 #include "fluidThermo.H"

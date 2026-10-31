@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "Map.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //

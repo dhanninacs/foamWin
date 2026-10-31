@@ -45,7 +45,7 @@ SourceFiles
 #ifndef PatchTools_H
 #define PatchTools_H
 
-#include "primitivePatch.H"
+#include "PrimitivePatch.H"
 #include "HashSet.H"
 #include "globalIndex.H"
 #include "autoPtr.H"

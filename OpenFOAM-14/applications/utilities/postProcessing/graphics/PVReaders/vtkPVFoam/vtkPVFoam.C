@@ -31,7 +31,7 @@ License
 #include "fvFieldReconstructor.H"
 #include "pointFieldReconstructor.H"
 #include "lagrangianFieldReconstructor.H"
-#include "lagrangianFieldReconstructor.H"
+#include "LagrangianFieldReconstructor.H"
 #include "fvMeshStitcher.H"
 #include "patchZones.H"
 #include "fileOperation.H"

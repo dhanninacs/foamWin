@@ -37,7 +37,7 @@ SourceFiles
 #define streamlinesParticle_H
 
 #include "particle.H"
-#include "cloud.H"
+#include "Cloud.H"
 #include "autoPtr.H"
 #include "interpolation.H"
 #include "vectorList.H"

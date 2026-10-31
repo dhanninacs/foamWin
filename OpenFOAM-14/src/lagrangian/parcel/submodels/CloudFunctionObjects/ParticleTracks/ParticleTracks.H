@@ -36,7 +36,7 @@ SourceFiles
 #define ParticleTracks_H
 
 #include "CloudFunctionObject.H"
-#include "cloud.H"
+#include "Cloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

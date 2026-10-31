@@ -38,7 +38,7 @@ Description
 #include "instantList.H"
 #include "IOobjectList.H"
 #include "itoa.H"
-#include "cloud.H"
+#include "Cloud.H"
 #include "passiveParticle.H"
 
 using namespace Foam;
