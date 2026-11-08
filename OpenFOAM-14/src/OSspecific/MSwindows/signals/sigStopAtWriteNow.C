@@ -151,7 +151,7 @@ void Foam::sigStopAtWriteNow::set(const bool verbose)
         }
 
 
-        oldAction_ = ::signal(signal_, &Foam::sigWriteNow::sigHandler);        
+        oldAction_ = ::signal(signal_, &Foam::sigStopAtWriteNow::sigHandler);        
 
         if (SIG_ERR == oldAction_)
         {
