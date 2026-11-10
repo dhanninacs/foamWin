@@ -9,6 +9,9 @@ PowerShell launcher, a Windows installer, and validated cavity examples.
 This is an independent community port, not an official OpenFOAM distribution.
 The Windows binaries run without MSYS2 or WSL. Building from source requires Linux.
 
+**Project site:** <https://dhanninacs.github.io/foamWin/> — downloads, what ships,
+validation details, limitations and the application attachment guide.
+
 ## Download and install
 
 The latest release is **v14.0.0-win.3**, adding native application attachment support.

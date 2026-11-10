@@ -1,0 +1,65 @@
+# FoamWin — OpenFOAM 14 for Windows
+
+> A community native Windows x64 port of Foundation OpenFOAM 14. MinGW-w64 build,
+> PowerShell launcher, guided installer, optional Microsoft MPI, cfMesh and four
+> graph partitioners. No MSYS2, no WSL, no Bash at runtime.
+
+- Site: https://dhanninacs.github.io/foamWin/
+- Source: https://github.com/dhanninacs/foamWin
+- Releases: https://github.com/dhanninacs/foamWin/releases
+- Changelog: https://github.com/dhanninacs/foamWin/blob/main/CHANGELOG.md
+- Windows usage: https://github.com/dhanninacs/foamWin/blob/main/packaging/WINDOWS-README.md
+- Application attachment guide: https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md
+- Porting notes: https://github.com/dhanninacs/foamWin/blob/main/PORTING-NOTES.md
+
+## What it is
+
+FoamWin is Foundation OpenFOAM 14 cross-compiled with MinGW-w64 GCC onto a native
+Windows operating-system layer derived from blueCFD. It ships ordinary Windows
+executables and DLLs. Executable names, package filenames and the OpenFOAM
+namespace are unchanged, so existing tutorials and dictionaries work as written.
+
+Building from source requires a case-sensitive Linux filesystem and a MinGW-w64
+cross toolchain. Running the result does not require Linux, MSYS2, WSL or Bash.
+
+## Current release
+
+v14.0.0-win.5 — 31 October 2026. Adds Scotch/METIS partitioners for decomposePar,
+PT-Scotch and Zoltan for parallel redistribution under Microsoft MPI, and cfMesh
+(cartesianMesh, tetMesh, pMesh, cartesian2DMesh, generateBoundaryLayers,
+improveMeshQuality) with OpenMP support.
+
+Distribution files retain their tested OpenFOAM package names:
+
+- OF14-win-setup.exe — guided installer with shortcuts and uninstaller (86 MB)
+- OF14-win.zip — portable distribution with a PowerShell install option (131 MB)
+- SHA256SUMS.txt — checksums for both
+
+## Requirements and limits
+
+- 64-bit Windows, double precision, 32-bit labels.
+- Microsoft MPI is optional: serial works without it, local parallel requires it.
+- ParaView is not bundled; open the generated `cavity.foam` in a separate install.
+- Runtime code compilation needs additional compiler configuration.
+- Docker/multi-host MPI operation and performance scaling are not validated.
+
+## Validation
+
+176 executables pass `-help` on Windows; the legacy icoFoam cavity runs to 0.5 s
+with `Mesh OK`; the modern incompressibleFluid cavity runs under `foamRun` to
+time 10; decomposition, redistribution, cfMesh meshing with boundary layers,
+installer/shortcut execution, paths containing spaces and VTK export are all
+exercised. These are smoke and execution tests, not physical benchmarks.
+
+## Related
+
+- Stokes — a desktop CFD workbench for OpenFOAM 14 that drives this engine:
+  https://dhanninacs.github.io/stokes-cfd/
+- Stokes source: https://github.com/dhanninacs/stokes-cfd
+
+## Licence
+
+GPLv3, retaining OpenFOAM Foundation and blueCFD/blueCAPE upstream attribution.
+OPENFOAM® is a registered trade mark of OpenCFD Limited. FoamWin is an
+independent community port, not an official OpenFOAM distribution, and is not
+approved or endorsed by OpenCFD Limited or the OpenFOAM Foundation.
