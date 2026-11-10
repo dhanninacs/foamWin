@@ -14,392 +14,456 @@
 <meta property="og:url" content="https://dhanninacs.github.io/foamWin/">
 <meta property="og:image" content="https://dhanninacs.github.io/foamWin/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FoamWin — OpenFOAM 14 for Windows">
-<meta name="twitter:description" content="A community native Windows x64 port of Foundation OpenFOAM 14. No MSYS2, no WSL.">
-<meta name="twitter:image" content="https://dhanninacs.github.io/foamWin/assets/og.png">
-<meta name="theme-color" content="#0b0a08">
+<meta name="theme-color" content="#eeebe4">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/site.css">
-<script>
-  // Nothing paints in the wrong palette: the theme is decided before first paint.
-  (function () {
-    try {
-      var t = localStorage.getItem("foamwin-theme");
-      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  })();
-</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#eeebe4; --paper-2:#e4e0d6; --ink:#14130f; --ink-2:#4a473f; --line:#14130f26;
+  --accent:#2540ff; --accent-ink:#fff; --term:#14130f; --term-ink:#e9e6dd; --term-dim:#8b877b; --ok:#8fe388;
+  --sans:"Familjen Grotesk",system-ui,sans-serif; --mono:"Spline Sans Mono",ui-monospace,Consolas,monospace;
+  --gut:clamp(16px,4vw,48px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--paper:#121210;--paper-2:#1b1b18;--ink:#eeebe4;--ink-2:#a8a498;--line:#eeebe42e;--accent:#6f84ff;--accent-ink:#0a0c1f;--term:#0a0a09;}
+}
+:root[data-theme="dark"]{--paper:#121210;--paper-2:#1b1b18;--ink:#eeebe4;--ink-2:#a8a498;--line:#eeebe42e;--accent:#6f84ff;--accent-ink:#0a0c1f;--term:#0a0a09;}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+html,body{overflow-x:clip}body{background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+code,pre,.mono{font-family:var(--mono);font-size:.86em}
+code{background:var(--paper-2);padding:.1em .35em;border-radius:4px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 var(--gut)}
+.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;background:var(--ink);color:var(--paper);padding:8px 12px;z-index:99}
+
+/* bar */
+.bar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:28px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.02em;text-decoration:none}
+.brand i{width:24px;height:24px;border-radius:6px;background:var(--accent);display:grid;place-items:center}
+.brand svg{width:16px;height:16px}
+.nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav a{text-decoration:none;color:var(--ink-2)}.nav a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:11px 18px;border-radius:8px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--accent-ink);border:1.5px solid var(--accent);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn.sm{padding:7px 14px;font-size:15px}
+.tbtn{background:none;border:1.5px solid var(--line);color:var(--ink-2);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:15px}
+@media(max-width:760px){.nav a:not(.keep){display:none}.nav{gap:14px}}
+
+/* hero */
+.hero{padding:clamp(40px,7vw,96px) 0 clamp(40px,6vw,80px)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+.tag{font:500 13px var(--mono);color:var(--ink-2);margin-bottom:22px}
+.tag b{color:var(--accent);font-weight:500}
+h1{font-size:clamp(46px,7.6vw,104px);line-height:.93;letter-spacing:-.045em;font-weight:700}
+h1 u{text-decoration:none;color:var(--accent)}
+.lede{font-size:clamp(18px,1.8vw,22px);max-width:34em;margin:28px 0 32px;color:var(--ink-2)}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.hash{margin-top:26px;display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:8px;max-width:max-content;font:400 13px var(--mono);overflow:hidden;max-width:100%}
+.hash span{min-width:0;padding:9px 12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hash button{border:0;border-left:1.5px solid var(--line);background:var(--paper-2);color:var(--ink);padding:9px 12px;font:inherit;cursor:pointer}
+.hash button:hover{background:var(--accent);color:var(--accent-ink)}
+
+/* terminal */
+.term{background:var(--term);color:var(--term-ink);border-radius:12px;box-shadow:10px 10px 0 var(--accent);overflow:hidden;min-height:340px}
+.term-bar{display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #ffffff1a;font:400 12px var(--mono);color:var(--term-dim)}
+.term pre{padding:18px;white-space:pre-wrap;word-break:break-word;line-height:1.7;min-height:290px}
+.term .p{color:#7f98ff}.term .d{color:var(--term-dim)}.term .g{color:var(--ok)}
+.cur{display:inline-block;width:8px;height:15px;background:var(--term-ink);vertical-align:-2px;animation:b 1s steps(1) infinite}
+@keyframes b{50%{opacity:0}}
+@media(max-width:900px){.hero .wrap{grid-template-columns:minmax(0,1fr)}.term{box-shadow:6px 6px 0 var(--accent)}}
+
+/* facts */
+.facts{border-block:1.5px solid var(--ink)}
+.facts .wrap{display:grid;grid-template-columns:repeat(5,1fr)}
+.fact{padding:22px 18px 22px 0;border-right:1px solid var(--line);margin-right:18px}
+.fact:last-child{border:0}
+.fact b{display:block;font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1}
+.fact span{font-size:14px;color:var(--ink-2)}
+@media(max-width:800px){.facts .wrap{grid-template-columns:1fr 1fr}.fact{border:0;border-bottom:1px solid var(--line)}}
+
+/* sections */
+section.s{padding:clamp(56px,9vw,120px) 0}
+.s-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,6vw,96px)}
+h2{font-size:clamp(34px,5vw,64px);line-height:1;letter-spacing:-.04em;font-weight:700}
+h2 + p{margin-top:18px;color:var(--ink-2);max-width:30em}
+.k{font:500 13px var(--mono);color:var(--accent);margin-bottom:14px;display:block}
+@media(max-width:860px){.s-grid{grid-template-columns:1fr}}
+.prose p+p{margin-top:1em}
+.prose p{max-width:38em}
+
+/* compare */
+.cmp{width:100%;border-collapse:collapse;margin-top:8px}
+.cmp th,.cmp td{text-align:left;padding:14px 12px 14px 0;border-bottom:1px solid var(--line);vertical-align:top;font-size:16px}
+.cmp th{font:500 12px var(--mono);color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+.cmp td:first-child{color:var(--ink-2);width:30%}
+.cmp td:last-child{font-weight:600}
+.cmp td:last-child:before{content:"→ ";color:var(--accent)}
+
+/* tabs */
+.alt{background:var(--paper-2)}
+.tabs{margin-top:44px;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--paper)}
+.tablist{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1.5px solid var(--ink)}
+.tablist button{font:600 16px var(--sans);padding:16px 8px;background:none;border:0;border-right:1px solid var(--line);color:var(--ink-2);cursor:pointer;text-align:left;padding-left:18px}
+.tablist button:last-child{border-right:0}
+.tablist button small{display:block;font:400 12px var(--mono);opacity:.7}
+.tablist button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.panel{display:grid;grid-template-columns:1fr 1fr;min-height:260px}
+.panel[hidden]{display:none}
+.panel>div{padding:28px}
+.panel h3{font-size:30px;letter-spacing:-.03em;margin-bottom:10px}
+.panel pre{background:var(--term);color:var(--term-ink);padding:24px;white-space:pre-wrap;line-height:1.75}
+.panel pre .d{color:var(--term-dim)}
+@media(max-width:800px){.tablist{grid-template-columns:repeat(5,minmax(0,1fr))}.tablist button{padding:12px 6px;font-size:13px;text-align:center}.tablist small{display:none}.panel{grid-template-columns:1fr}}
+.note{margin-top:20px;font-size:15px;color:var(--ink-2);max-width:48em}
+
+/* files */
+.files{width:100%;border-collapse:collapse;font-size:16px}
+.files td{padding:18px 12px 18px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+.files tr:first-child td{border-top:1.5px solid var(--ink)}
+.files .n{font:500 15px var(--mono)}
+.files .t{font:400 12px var(--mono);color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;width:90px}
+.files .z{font:400 14px var(--mono);text-align:right;white-space:nowrap;color:var(--ink-2)}
+.files .d{color:var(--ink-2);font-size:15px}
+@media(max-width:700px){.files .d{display:none}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,56px);margin-top:48px}
+.two h3{font-size:24px;letter-spacing:-.02em;margin-bottom:8px}
+.two p{color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips span{font:400 13px var(--mono);border:1.5px solid var(--ink);border-radius:99px;padding:4px 12px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+
+/* evidence */
+.dark{background:var(--term);color:var(--term-ink)}
+.dark h2 + p,.dark .note{color:var(--term-dim)}
+.dark .k{color:var(--ok)}
+.chk{list-style:none;padding:0;margin-top:8px}
+.chk li{display:grid;grid-template-columns:28px 120px 1fr;gap:6px;padding:15px 0;border-bottom:1px solid #ffffff1f;font-size:16px}
+.chk li:before{content:"✓";color:var(--ok);font-family:var(--mono)}
+.chk b{font:500 13px var(--mono);color:var(--term-dim);padding-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.dark code{background:#ffffff17}
+.warn{margin-top:28px;padding:18px 20px;border-left:3px solid var(--ok);background:#ffffff0d;color:var(--term-ink);max-width:40em}
+@media(max-width:600px){.chk li{grid-template-columns:24px 1fr}.chk b{grid-column:2}}
+
+/* limits */
+.lim{list-style:none;padding:0;display:grid;gap:0}
+.lim li{padding:20px 0 20px 40px;border-bottom:1px solid var(--line);position:relative}
+.lim li:before{content:"×";position:absolute;left:0;top:16px;font:500 24px var(--mono);color:var(--accent)}
+.lim b{display:block;font-size:19px;letter-spacing:-.01em}
+.lim span{color:var(--ink-2)}
+.lim li:first-child{border-top:1.5px solid var(--ink)}
+
+/* builders */
+.fields{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.fields span{font:400 13px var(--mono);background:var(--paper);border:1.5px solid var(--line);padding:5px 10px;border-radius:6px}
+.lnk{font-weight:600;text-decoration:none;border-bottom:2px solid var(--accent)}
+.lnk:hover{background:var(--accent);color:var(--accent-ink)}
+
+/* bridge */
+.bridge{background:var(--accent);color:var(--accent-ink)}
+.bridge .wrap{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;padding-block:clamp(48px,8vw,100px)}
+.bridge h2{color:var(--accent-ink);font-size:clamp(34px,6vw,84px)}
+.bridge p{max-width:34em;margin-top:20px;opacity:.9;font-size:19px}
+.bridge a.big{font-size:20px;font-weight:700;text-decoration:none;background:var(--accent-ink);color:var(--accent);padding:18px 26px;border-radius:10px;white-space:nowrap}
+.bridge a.big:hover{transform:translateY(-3px)}
+@media(max-width:760px){.bridge .wrap{grid-template-columns:1fr}}
+
+/* footer */
+footer{padding:56px 0 40px;font-size:15px}
+.fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px}
+.fg h4{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:12px}
+.fg ul{list-style:none;padding:0;display:grid;gap:6px}
+.fg a{text-decoration:none}.fg a:hover{color:var(--accent)}
+.legal{margin-top:44px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-2);font-size:13px;display:grid;gap:10px;max-width:70em}
+@media(max-width:760px){.fg{grid-template-columns:1fr 1fr}}
+
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}.cur{animation:none}}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+</style>
 </head>
 <body>
 <a class="skip" href="#port">Skip to content</a>
 
-<header class="bar" data-bar>
-  <div class="bar-in">
-    <a class="brand" href="./" translate="no">
-      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2 15c3.2 0 3.2-6 6.4-6s3.2 6 6.4 6 3.2-6 6.4-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <span>FoamWin</span>
-    </a>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="./" translate="no"><i><svg viewBox="0 0 24 24"><path d="M3 16c3-9 6-9 9-4s6 5 9-4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></i>FoamWin</a>
     <nav class="nav" aria-label="Site">
-      <a href="#port">The port</a>
-      <a href="#pipeline">Pipeline</a>
-      <a href="#ships">What ships</a>
-      <a href="https://dhanninacs.github.io/stokes-cfd/" class="nav-stokes" data-track="out_stokes_nav">Stokes<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.6 3H9v4.4"/></svg></a>
-      <a href="https://github.com/dhanninacs/foamWin" data-track="out_github_nav">GitHub</a>
+      <a href="#port">Port</a><a href="#workflow">Workflow</a><a href="#ships">Downloads</a><a href="#evidence">Evidence</a>
+      <a href="https://dhanninacs.github.io/stokes-cfd/">Stokes ↗</a>
+      <a class="keep" href="https://github.com/dhanninacs/foamWin">GitHub ↗</a>
     </nav>
-    <div class="actions">
-      <div class="theme" role="radiogroup" aria-label="Colour theme">
-        <button type="button" role="radio" aria-checked="true" data-theme-set="auto" title="Match the system" aria-label="Auto"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg></button>
-        <button type="button" role="radio" aria-checked="false" data-theme-set="light" title="Light" aria-label="Light"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"/></svg></button>
-        <button type="button" role="radio" aria-checked="false" data-theme-set="dark" title="Dark" aria-label="Dark"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.8A5.6 5.6 0 0 1 6.2 2.5a5.6 5.6 0 1 0 7.3 7.3Z"/></svg></button>
-      </div>
-      <a class="pill small" href="https://github.com/dhanninacs/foamWin/releases/latest" data-track="out_download_nav">Download</a>
-    </div>
+    <button class="tbtn" id="theme" type="button" aria-label="Toggle colour theme" title="Toggle theme">◐</button>
+    <a class="btn sm" href="https://github.com/dhanninacs/foamWin/releases/latest">Download</a>
   </div>
 </header>
 
 <main>
-
-<!-- ─────────────────────────  HERO  ───────────────────────── -->
-<section class="hero" aria-labelledby="hero-title">
-  <canvas class="fluid" data-fluid aria-hidden="true"></canvas>
-  <div class="hero-grain" aria-hidden="true"></div>
-  <div class="hero-in">
-    <p class="eyebrow"><span class="dot"></span>Community port · Foundation OpenFOAM 14</p>
-    <h1 id="hero-title">
-      <span class="l1">OpenFOAM 14,</span>
-      <span class="l2"><em>rebuilt</em> for Windows.</span>
-    </h1>
-    <p class="lede">A native x64 port with a PowerShell launcher and a real installer.
-      No MSYS2, no WSL, no Linux — not at runtime, not ever.</p>
-    <div class="cta">
-      <a class="pill big" href="https://github.com/dhanninacs/foamWin/releases/latest" data-track="hero_download">
-        Download <span class="v">v14.0.0-win.5</span>
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M2.5 13.5h11"/></svg>
-      </a>
-      <a class="pill big outline" href="https://github.com/dhanninacs/foamWin" data-track="hero_source">Read the source</a>
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <p class="tag"><b>v14.0.0-win.5</b> · community port of Foundation OpenFOAM 14</p>
+      <h1>OpenFOAM, <u>native</u> on Windows.</h1>
+      <p class="lede">Real <code>.exe</code> and <code>.dll</code> files, a PowerShell launcher and an installer. No MSYS2, no WSL, no Linux at runtime.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/dhanninacs/foamWin/releases/latest">Get the installer ↓</a>
+        <a class="btn ghost" href="https://github.com/dhanninacs/foamWin">Read the source</a>
+      </div>
+      <div class="hash" aria-label="Verify the download">
+        <span id="hashcmd">Get-FileHash .\OF14-win-setup.exe -Algorithm SHA256</span>
+        <button type="button" id="copy">Copy</button>
+      </div>
     </div>
-    <ul class="hero-meta">
-      <li><strong>176</strong> executables validated</li>
-      <li><strong>5.5 KB</strong> launcher, not a VM</li>
-      <li><strong>GPLv3</strong> · community port</li>
-    </ul>
+    <div class="term" aria-label="Example PowerShell session">
+      <div class="term-bar"><span>PowerShell — FoamWin 14</span><span>smoke test</span></div>
+      <pre id="tty" aria-live="off"></pre>
+    </div>
   </div>
-  <div class="scroll-hint" aria-hidden="true"><span></span>Scroll</div>
 </section>
 
-<!-- ─────────────────────────  MARQUEE  ───────────────────────── -->
-<div class="marquee" aria-hidden="true">
-  <div class="marquee-track">
-    <span>blockMesh</span><span>·</span><span>snappyHexMesh</span><span>·</span><span>cfMesh</span><span>·</span><span>icoFoam</span><span>·</span><span>foamRun</span><span>·</span><span>decomposePar</span><span>·</span><span>reconstructPar</span><span>·</span><span>scotch</span><span>·</span><span>ptscotch</span><span>·</span><span>zoltan</span><span>·</span><span>metis</span><span>·</span><span>checkMesh</span><span>·</span><span>foamToVTK</span><span>·</span><span>surfaceFeatures</span><span>·</span>
-    <span>blockMesh</span><span>·</span><span>snappyHexMesh</span><span>·</span><span>cfMesh</span><span>·</span><span>icoFoam</span><span>·</span><span>foamRun</span><span>·</span><span>decomposePar</span><span>·</span><span>reconstructPar</span><span>·</span><span>scotch</span><span>·</span><span>ptscotch</span><span>·</span><span>zoltan</span><span>·</span><span>metis</span><span>·</span><span>checkMesh</span><span>·</span><span>foamToVTK</span><span>·</span><span>surfaceFeatures</span><span>·</span>
+<div class="facts">
+  <div class="wrap">
+    <div class="fact"><b>14</b><span>OpenFOAM release, ported whole</span></div>
+    <div class="fact"><b>176</b><span>executables answering <code>-help</code></span></div>
+    <div class="fact"><b>0</b><span>Bash shells needed to run</span></div>
+    <div class="fact"><b>86 MB</b><span>installer</span></div>
+    <div class="fact"><b>GPLv3</b><span>licence</span></div>
   </div>
 </div>
 
-<!-- ─────────────────────────  01 THE PORT  ───────────────────────── -->
-<section class="plate" id="port" aria-labelledby="port-title">
-  <div class="plate-head">
-    <p class="num">01</p>
-    <p class="kicker">The port</p>
-  </div>
-  <div class="plate-body">
-    <h2 id="port-title">A port,<br>not a wrapper.</h2>
-    <div class="two-col">
-      <div>
-        <p class="drop">FoamWin is Foundation OpenFOAM 14, cross-compiled with MinGW-w64 GCC and
-          given a Windows operating-system layer derived from blueCFD. The result is a set of
-          ordinary Windows executables and DLLs — not a container, not a headless Linux box in
-          a folder.</p>
-        <p>Because it is a real build, it behaves like one. Case dictionaries are the ones you
-          already write. Executable names, package filenames and the OpenFOAM namespace are
-          untouched, so tutorials, scripts and habit all carry over.</p>
+<section class="s" id="port">
+  <div class="wrap s-grid">
+    <div class="rv"><span class="k">/ the port</span><h2>A port, not a wrapper.</h2></div>
+    <div class="rv">
+      <div class="prose">
+        <p>FoamWin is Foundation OpenFOAM 14, cross-compiled with MinGW-w64 GCC and given a Windows operating-system layer derived from blueCFD. The output is ordinary Windows executables and DLLs.</p>
+        <p>Case dictionaries, executable names, package filenames and the OpenFOAM namespace are untouched, so tutorials and scripts carry over.</p>
       </div>
-      <aside class="margin">
-        <p class="margin-label">Build vs. run</p>
-        <p>Compiling from source still wants a case-sensitive Linux filesystem and a MinGW-w64
-          cross toolchain. That is a maintainer's problem, solved once. Running it is a
-          Windows problem, and that is solved too.</p>
-      </aside>
+      <table class="cmp" aria-label="Build versus run">
+        <tr><th>Concern</th><th>FoamWin</th></tr>
+        <tr><td>Running it</td><td>Native Windows x64 binaries</td></tr>
+        <tr><td>Linux, VM or container</td><td>Not used at runtime</td></tr>
+        <tr><td>Bash</td><td>Not required</td></tr>
+        <tr><td>Building from source</td><td>Case-sensitive Linux filesystem and a MinGW-w64 cross toolchain — a maintainer's job</td></tr>
+      </table>
     </div>
-
-    <div class="stats">
-      <div class="stat"><p class="stat-n">14</p><p class="stat-l">Foundation OpenFOAM release, ported whole</p></div>
-      <div class="stat"><p class="stat-n">176</p><p class="stat-l">Windows executables passing <code>-help</code></p></div>
-      <div class="stat"><p class="stat-n">0</p><p class="stat-l">Bash shells required at runtime</p></div>
-    </div>
-
-    <blockquote class="pull">
-      <p>The build needs Linux.<br><em>The result does not.</em></p>
-    </blockquote>
   </div>
 </section>
 
-<!-- ─────────────────────────  02 PIPELINE  ───────────────────────── -->
-<section class="plate alt" id="pipeline" aria-labelledby="pipeline-title">
-  <div class="plate-head">
-    <p class="num">02</p>
-    <p class="kicker">Pipeline</p>
-  </div>
-  <div class="plate-body">
-    <h2 id="pipeline-title">Five moves,<br>install to <em>cavity</em>.</h2>
-    <p class="intro-wide">Every step below is exercised by the package’s own smoke tests on a
-      clean Windows machine.</p>
-
-    <ol class="steps">
-      <li class="step">
-        <p class="step-n">01</p>
-        <h3>Download</h3>
-        <p>Take <code>OF14-win-setup.exe</code> for a guided install with shortcuts and an
-          uninstaller, or the portable <code>OF14-win.zip</code>. Verify against
-          <code>SHA256SUMS.txt</code>.</p>
-      </li>
-      <li class="step">
-        <p class="step-n">02</p>
-        <h3>Launch</h3>
-        <p>Open the <strong>OpenFOAM 14</strong> shortcut, or double-click
-          <code>of14-shell.bat</code>. The launcher wires the binaries and DLLs, then drops you
-          in your run directory.</p>
-      </li>
-      <li class="step">
-        <p class="step-n">03</p>
-        <h3>Mesh</h3>
-        <p><code>blockMesh</code> for the structured core, <code>snappyHexMesh</code> for
-          geometry, and cfMesh — cartesian, tet, poly and 2D meshers with boundary layers.</p>
-      </li>
-      <li class="step">
-        <p class="step-n">04</p>
-        <h3>Solve</h3>
-        <p>Legacy solvers such as <code>icoFoam</code> and the modern <code>foamRun</code>
-          framework. Serial by default, or local parallel with optional Microsoft MPI.</p>
-      </li>
-      <li class="step">
-        <p class="step-n">05</p>
-        <h3>Look at it</h3>
-        <p>The smoke test writes <code>cavity.foam</code>. Open it in ParaView, or export
-          with <code>foamToVTK</code> and post-process with <code>foamPostProcess</code>.</p>
-      </li>
-    </ol>
-
-    <div class="shell">
-      <div class="shell-bar"><span class="shell-dot"></span>PowerShell · FoamWin 14</div>
-<pre><code><span class="c"># from the extracted package</span>
+<section class="s alt" id="workflow">
+  <div class="wrap">
+    <div class="rv"><span class="k">/ workflow</span><h2>Install to cavity in five steps.</h2><p>Every step is exercised by the package's own smoke tests on a clean Windows machine.</p></div>
+    <div class="tabs rv" id="tabs">
+      <div class="tablist" role="tablist" aria-label="Workflow steps">
+        <button role="tab" aria-selected="true" aria-controls="p0" id="t0"><small>step 1</small>Download</button>
+        <button role="tab" aria-selected="false" aria-controls="p1" id="t1"><small>step 2</small>Launch</button>
+        <button role="tab" aria-selected="false" aria-controls="p2" id="t2"><small>step 3</small>Mesh</button>
+        <button role="tab" aria-selected="false" aria-controls="p3" id="t3"><small>step 4</small>Solve</button>
+        <button role="tab" aria-selected="false" aria-controls="p4" id="t4"><small>step 5</small>View</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p0" aria-labelledby="t0">
+        <div><h3>Download</h3><p>Take <code>OF14-win-setup.exe</code> for a guided install with shortcuts and an uninstaller, or the portable <code>OF14-win.zip</code>. Check both against <code>SHA256SUMS.txt</code>.</p></div>
+<pre><span class="d"># verify the installer</span>
+Get-FileHash .\OF14-win-setup.exe `
+  -Algorithm SHA256
+<span class="d"># compare with SHA256SUMS.txt</span></pre>
+      </div>
+      <div class="panel" id="p1" role="tabpanel" aria-labelledby="t1" hidden>
+        <div><h3>Launch</h3><p>Open the <strong>OpenFOAM 14</strong> shortcut, or double-click <code>of14-shell.bat</code>. The launcher wires up binaries and DLLs, then drops you in your run directory.</p></div>
+<pre><span class="d"># from the extracted package</span>
 . ./of14-shell.ps1 -Quiet
-<span class="c"># everything is now on PATH, as on Linux</span>
-blockMesh -help
-
-<span class="c"># the full smoke test: mesh, check, solve, verify</span>
-./of14-smoke-test.ps1
-
-<span class="c"># four processes, if Microsoft MPI is installed</span>
-./of14-smoke-test.ps1 -Processes 4</code></pre>
+<span class="d"># everything is on PATH, as on Linux</span>
+blockMesh -help</pre>
+      </div>
+      <div class="panel" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+        <div><h3>Mesh</h3><p><code>blockMesh</code> for structured cores, <code>snappyHexMesh</code> for geometry, and cfMesh: cartesian, tet, poly and 2D meshers with boundary layers.</p></div>
+<pre>blockMesh
+checkMesh
+<span class="d"># or cfMesh</span>
+cartesianMesh</pre>
+      </div>
+      <div class="panel" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+        <div><h3>Solve</h3><p>Legacy solvers such as <code>icoFoam</code> and the modern <code>foamRun</code> framework. Serial by default, or local parallel with optional Microsoft MPI.</p></div>
+<pre>icoFoam
+<span class="d"># or the modular solver</span>
+foamRun
+<span class="d"># full smoke test, 4 processes</span>
+./of14-smoke-test.ps1 -Processes 4</pre>
+      </div>
+      <div class="panel" id="p4" role="tabpanel" aria-labelledby="t4" hidden>
+        <div><h3>View</h3><p>The smoke test writes <code>cavity.foam</code>. Open it in ParaView, or export with <code>foamToVTK</code> and post-process with <code>foamPostProcess</code>.</p></div>
+<pre>foamToVTK
+<span class="d"># then open cavity.foam in ParaView</span></pre>
+      </div>
     </div>
-
-    <p class="footnote">Paths containing spaces are handled by a temporary junction alias, so
-      <code>C:\Program Files\FoamWin</code> and <code>D:\my cases</code> both work without
-      renaming anything.</p>
+    <p class="note rv">Paths containing spaces are handled by a temporary junction alias, so <code>C:\Program Files\FoamWin</code> and <code>D:\my cases</code> both work without renaming anything.</p>
   </div>
 </section>
 
-<!-- ─────────────────────────  03 WHAT SHIPS  ───────────────────────── -->
-<section class="plate" id="ships" aria-labelledby="ships-title">
-  <div class="plate-head">
-    <p class="num">03</p>
-    <p class="kicker">What ships</p>
-  </div>
-  <div class="plate-body">
-    <h2 id="ships-title">Everything but<br>the <em>viewer</em>.</h2>
-
-    <div class="assets">
-      <article class="asset">
-        <p class="asset-tag">Installer</p>
-        <p class="asset-name">OF14-win-setup.exe</p>
-        <p class="asset-size">86 MB</p>
-        <p class="asset-note">Guided install, Desktop and Start Menu shortcuts, optional MSYS2,
-          uninstaller.</p>
-      </article>
-      <article class="asset">
-        <p class="asset-tag">Portable</p>
-        <p class="asset-name">OF14-win.zip</p>
-        <p class="asset-size">131 MB</p>
-        <p class="asset-note">Extract anywhere. Ships a PowerShell installer script if you
-          want it registered.</p>
-      </article>
-      <article class="asset">
-        <p class="asset-tag">Verify</p>
-        <p class="asset-name">SHA256SUMS.txt</p>
-        <p class="asset-size">164 B</p>
-        <p class="asset-note">Checksums for both downloads. Small file, no excuses.</p>
-      </article>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <h3>Parallel, locally</h3>
-        <p>Optional Microsoft MPI adds <code>decomposePar</code>, <code>reconstructPar</code>
-          and <code>redistributePar</code>. Validated on two and four processes; serial
-          fallback stays available when the runtime is missing.</p>
-      </div>
-      <div class="card">
-        <h3>Four partitioners</h3>
-        <table class="mini">
-          <tr><td><code>scotch</code>, <code>metis</code></td><td>Scotch 7.0.12 · METIS 5.2.1 + GKlib</td></tr>
-          <tr><td><code>ptscotch</code>, <code>zoltan</code></td><td>PT-Scotch 7.0.12 · Zoltan 3.90</td></tr>
-        </table>
-        <p class="card-foot">Shipped with their licence texts under <code>runtime-licenses</code>.</p>
+<section class="s" id="ships">
+  <div class="wrap s-grid">
+    <div class="rv"><span class="k">/ downloads</span><h2>Everything but the viewer.</h2><p>Install ParaView separately; VTK export is built in.</p></div>
+    <div class="rv">
+      <table class="files">
+        <tr><td class="t">Installer</td><td class="n">OF14-win-setup.exe</td><td class="d">Guided install, Desktop and Start Menu shortcuts, optional MSYS2, uninstaller</td><td class="z">86 MB</td></tr>
+        <tr><td class="t">Portable</td><td class="n">OF14-win.zip</td><td class="d">Extract anywhere; includes a PowerShell installer script</td><td class="z">131 MB</td></tr>
+        <tr><td class="t">Checksums</td><td class="n">SHA256SUMS.txt</td><td class="d">For both downloads</td><td class="z">164 B</td></tr>
+      </table>
+      <div class="two">
+        <div><h3>Parallel, locally</h3><p>Optional Microsoft MPI adds <code>decomposePar</code>, <code>reconstructPar</code> and <code>redistributePar</code>. Validated on two and four processes; serial fallback stays when the runtime is missing.</p></div>
+        <div><h3>Four partitioners</h3><p>Shipped with their licence texts under <code>runtime-licenses</code>.</p>
+          <div class="chips"><span>Scotch 7.0.12</span><span>METIS 5.2.1</span><span>PT-Scotch 7.0.12</span><span>Zoltan 3.90</span></div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─────────────────────────  04 VALIDATION  ───────────────────────── -->
-<section class="plate ink" id="validated" aria-labelledby="val-title">
-  <div class="plate-head">
-    <p class="num">04</p>
-    <p class="kicker">Evidence</p>
+<section class="s dark" id="evidence">
+  <div class="wrap s-grid">
+    <div class="rv"><span class="k">/ evidence</span><h2>Tested where it actually runs.</h2><p>On Windows, from the installed package, through the Desktop shortcut — not on a Linux CI box.</p></div>
+    <div class="rv">
+      <ul class="chk">
+        <li><b>Startup</b><span>Every packaged executable answers <code>-help</code></span></li>
+        <li><b>Cavity</b><span>Legacy <code>icoFoam</code> case through 0.5 s, <code>Mesh OK</code></span></li>
+        <li><b>Modern</b><span>incompressibleFluid cavity with <code>foamRun</code>, to time 10</span></li>
+        <li><b>Decompose</b><span>Scotch and METIS, serial and parallel</span></li>
+        <li><b>Redistribute</b><span>PT-Scotch and Zoltan under MS-MPI</span></li>
+        <li><b>cfMesh</b><span><code>cartesianMesh</code> with boundary layers, passing <code>checkMesh</code></span></li>
+        <li><b>Install</b><span>Setup, shortcut, uninstall, and re-run from the installed tree</span></li>
+        <li><b>Paths</b><span>Spaces in install and case directories, runtime DLL imports, ZIP integrity</span></li>
+        <li><b>Engine</b><span>Feature extraction, velocity post-processing and VTK export</span></li>
+      </ul>
+      <p class="warn">These are execution and smoke tests: proof that the machinery turns and the numbers land where they should. They are not exhaustive physical-model benchmarks.</p>
+    </div>
   </div>
-  <div class="plate-body">
-    <h2 id="val-title">Tested where it<br>actually <em>runs</em>.</h2>
-    <p class="intro-wide">Not on a Linux CI box wearing a Windows costume. On Windows, from the
-      installed package, through the Desktop shortcut.</p>
+</section>
 
-    <ul class="checks">
-      <li><span>Startup</span> every packaged executable answers <code>-help</code></li>
-      <li><span>Cavity</span> legacy <code>icoFoam</code> case through 0.5 s, <code>Mesh OK</code></li>
-      <li><span>Modern</span> incompressibleFluid cavity with <code>foamRun</code>, to time 10</li>
-      <li><span>Decompose</span> Scotch and METIS, serial and parallel</li>
-      <li><span>Redistribute</span> PT-Scotch and Zoltan under MS-MPI</li>
-      <li><span>cfMesh</span> <code>cartesianMesh</code> with boundary layers, passing <code>checkMesh</code></li>
-      <li><span>Install</span> setup, shortcut, uninstall, and re-run from the installed tree</li>
-      <li><span>Paths</span> spaces in install and case directories, runtime DLL imports, ZIP integrity</li>
-      <li><span>Engine</span> feature extraction, velocity post-processing and VTK export</li>
+<section class="s" id="limits">
+  <div class="wrap s-grid">
+    <div class="rv"><span class="k">/ limits</span><h2>What it won't do.</h2></div>
+    <ul class="lim rv">
+      <li><b>64-bit Windows only</b><span>Double precision, 32-bit labels — the combination that was built and tested.</span></li>
+      <li><b>No bundled viewer</b><span>Install ParaView and open <code>cavity.foam</code>. VTK export is built in.</span></li>
+      <li><b>Runtime compilation needs setup</b><span>Function-object code compiled at run time wants an extra compiler configuration. Prebuilt libraries are unaffected.</span></li>
+      <li><b>Local parallel only</b><span>Multi-host runs and performance scaling under MS-MPI have not been measured.</span></li>
     </ul>
-
-    <p class="disclaimer">These are execution and smoke tests — proof that the machinery turns
-      and the numbers land where they should. They are not exhaustive physical-model benchmarks,
-      and this site will not pretend otherwise.</p>
   </div>
 </section>
 
-<!-- ─────────────────────────  05 LIMITS  ───────────────────────── -->
-<section class="plate" id="limits" aria-labelledby="limits-title">
-  <div class="plate-head">
-    <p class="num">05</p>
-    <p class="kicker">Limits</p>
-  </div>
-  <div class="plate-body">
-    <h2 id="limits-title">What it<br>won’t do.</h2>
-    <div class="limits">
-      <div>
-        <p><strong>64-bit Windows only.</strong> Double precision, 32-bit labels — the
-          combination that was built and tested.</p>
-        <p><strong>No bundled viewer.</strong> Install ParaView yourself and open
-          <code>cavity.foam</code>. Exporting VTK is built in.</p>
-      </div>
-      <div>
-        <p><strong>Runtime compilation needs setup.</strong> Function-object code that compiles
-          at run time wants an extra compiler configuration. Prebuilt libraries are unaffected.</p>
-        <p><strong>Local parallel only.</strong> Multi-host runs and performance scaling under
-          MS-MPI have not been measured.</p>
-      </div>
+<section class="s alt" id="builders">
+  <div class="wrap s-grid">
+    <div class="rv"><span class="k">/ for builders</span><h2>An engine with a socket.</h2></div>
+    <div class="rv prose">
+      <p>A Windows host application does not have to speak Bash to drive OpenFOAM. <code>of14-env.ps1</code> returns one JSON document containing:</p>
+      <div class="fields"><span>schema version</span><span>flavour</span><span>absolute tool paths</span><span>prepared environment</span><span>library names</span><span>MPI availability</span><span>normalised case directory</span></div>
+      <p>Run it as an argument list, parse the JSON, use the paths. It exits with status 2 and a diagnostic if a required tool is missing, so a host adapter fails loudly instead of silently solving nothing.</p>
+      <p><a class="lnk" href="https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md">Attachment guide ↗</a></p>
     </div>
   </div>
 </section>
 
-<!-- ─────────────────────────  06 BUILDERS  ───────────────────────── -->
-<section class="plate alt" id="builders" aria-labelledby="builders-title">
-  <div class="plate-head">
-    <p class="num">06</p>
-    <p class="kicker">Builders</p>
-  </div>
-  <div class="plate-body">
-    <h2 id="builders-title">An engine with<br>a <em>socket</em>.</h2>
-    <div class="two-col">
-      <div>
-        <p class="drop">A Windows host application does not have to speak Bash to drive
-          OpenFOAM. <code>of14-env.ps1</code> hands back a JSON document — schema version,
-          flavour, absolute tool paths, a prepared environment, library names, MPI
-          availability, and a normalised case directory.</p>
-        <p>Run it as an argument list, parse the JSON, use the paths. It exits with status 2 and
-          a diagnostic if a required tool is missing, so a host adapter fails loudly instead of
-          silently solving nothing.</p>
-        <p class="linkrow"><a href="https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md">Attachment guide<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.6 3H9v4.4"/></svg></a></p>
-      </div>
-      <aside class="margin">
-        <p class="margin-label">First consumer</p>
-        <p>Stokes — a desktop CFD workbench — drives this engine directly. It uses the JSON
-          handshake, then runs meshers and solvers as native Windows subprocesses.</p>
-      </aside>
+<section class="bridge">
+  <div class="wrap">
+    <div>
+      <h2>FoamWin is the engine. Stokes is the workbench.</h2>
+      <p>Import a STEP file, pick faces for boundaries, mesh, run and read the results in one window — on Windows and Linux. FoamWin supplies the native OpenFOAM 14 runtime underneath.</p>
     </div>
+    <a class="big" href="https://dhanninacs.github.io/stokes-cfd/">Visit Stokes ↗</a>
   </div>
 </section>
-
-<!-- ─────────────────────────  07 CROSS-LINK  ───────────────────────── -->
-<section class="bridge" aria-labelledby="bridge-title">
-  <div class="bridge-in">
-    <p class="bridge-kicker">Same engine · a window on top</p>
-    <h2 id="bridge-title">FoamWin is the <em>engine</em>.<br>Stokes is the <em>workbench</em>.</h2>
-    <p class="bridge-copy">Import a STEP file, pick faces for boundaries, mesh it, run it and
-      read the results in one window — on Windows and Linux. FoamWin supplies the native
-      OpenFOAM 14 runtime underneath.</p>
-    <a class="bridge-link" href="https://dhanninacs.github.io/stokes-cfd/" data-track="out_stokes_bridge">
-      <span class="bridge-name">Visit Stokes</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M8 5h11v11"/></svg>
-    </a>
-    <p class="bridge-url">dhanninacs.github.io/stokes-cfd</p>
-  </div>
-</section>
-
 </main>
 
-<footer class="foot">
-  <div class="foot-in">
-    <div class="foot-brand">
-      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2 15c3.2 0 3.2-6 6.4-6s3.2 6 6.4 6 3.2-6 6.4-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <p>FoamWin<br><span>OpenFOAM 14 for Windows</span></p>
+<footer>
+  <div class="wrap">
+    <div class="fg">
+      <div><a class="brand" href="./" translate="no"><i><svg viewBox="0 0 24 24"><path d="M3 16c3-9 6-9 9-4s6 5 9-4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></i>FoamWin</a><p style="margin-top:10px;color:var(--ink-2)">OpenFOAM 14 for Windows</p></div>
+      <div><h4>Project</h4><ul>
+        <li><a href="https://github.com/dhanninacs/foamWin">Source</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/releases">Releases</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/CHANGELOG.md">Changelog</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/PORTING-NOTES.md">Porting notes</a></li></ul></div>
+      <div><h4>Docs</h4><ul>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/packaging/WINDOWS-README.md">Windows usage</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md">Attach an app</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/packaging/README.md">Packaging</a></li>
+        <li><a href="https://github.com/dhanninacs/foamWin/blob/main/REPOSITORY.md">Repository notes</a></li></ul></div>
+      <div><h4>Related</h4><ul>
+        <li><a href="https://dhanninacs.github.io/stokes-cfd/">Stokes GUI</a></li>
+        <li><a href="https://github.com/dhanninacs/stokes-cfd">Stokes source</a></li>
+        <li><a href="https://www.openfoam.org/">openfoam.org</a></li>
+        <li><a href="llms.txt">llms.txt</a></li></ul></div>
     </div>
-    <div class="foot-cols">
-      <div>
-        <p class="foot-h">Project</p>
-        <ul>
-          <li><a href="https://github.com/dhanninacs/foamWin">Source</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/releases">Releases</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/CHANGELOG.md">Changelog</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/PORTING-NOTES.md">Porting notes</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="foot-h">Docs</p>
-        <ul>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/packaging/WINDOWS-README.md">Windows usage</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md">Attach an app</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/packaging/README.md">Packaging</a></li>
-          <li><a href="https://github.com/dhanninacs/foamWin/blob/main/REPOSITORY.md">Repository notes</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="foot-h">Related</p>
-        <ul>
-          <li><a href="https://dhanninacs.github.io/stokes-cfd/" data-track="out_stokes_footer">Stokes GUI</a></li>
-          <li><a href="https://github.com/dhanninacs/stokes-cfd">Stokes source</a></li>
-          <li><a href="https://www.openfoam.org/">openfoam.org</a></li>
-          <li><a href="llms.txt">llms.txt</a></li>
-        </ul>
-      </div>
+    <div class="legal">
+      <p>FoamWin is an independent community port and is not an official OpenFOAM distribution. OPENFOAM® is a registered trade mark of OpenCFD Limited, producer and distributor of the OpenFOAM software via www.openfoam.com. FoamWin is not approved or endorsed by OpenCFD Limited or the OpenFOAM Foundation.</p>
+      <p>GPLv3, with upstream OpenFOAM Foundation and blueCFD/blueCAPE attribution retained. Third-party runtime DLLs keep their own licences.</p>
     </div>
-  </div>
-  <div class="foot-legal">
-    <p>FoamWin is an independent community port and is not an official OpenFOAM distribution.
-      OPENFOAM® is a registered trade mark of OpenCFD Limited, producer and distributor of the
-      OpenFOAM software via www.openfoam.com. FoamWin is not approved or endorsed by OpenCFD
-      Limited or the OpenFOAM Foundation.</p>
-    <p>GPLv3, with upstream OpenFOAM Foundation and blueCFD/blueCAPE attribution retained.
-      Third-party runtime DLLs keep their own licences.</p>
   </div>
 </footer>
 
-<script src="assets/fluid.js" defer></script>
-<script src="assets/site.js" defer></script>
+<script>
+(function(){
+  var root=document.documentElement;
+  try{var t=localStorage.getItem("foamwin-theme");if(t)root.setAttribute("data-theme",t)}catch(e){}
+  document.getElementById("theme").onclick=function(){
+    var dark=root.getAttribute("data-theme")==="dark"||(!root.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme:dark)").matches);
+    var n=dark?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("foamwin-theme",n)}catch(e){}
+  };
+
+  // copy
+  var cp=document.getElementById("copy");
+  cp.onclick=function(){
+    var txt=document.getElementById("hashcmd").textContent;
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){cp.textContent="Copied"},function(){cp.textContent="Select + Ctrl+C"});
+    setTimeout(function(){cp.textContent="Copy"},1800);
+  };
+
+  // tabs
+  var tabs=[].slice.call(document.querySelectorAll("#tabs [role=tab]"));
+  function sel(i){tabs.forEach(function(b,j){var on=i===j;b.setAttribute("aria-selected",on);b.tabIndex=on?0:-1;document.getElementById("p"+j).hidden=!on})}
+  tabs.forEach(function(b,i){b.onclick=function(){sel(i)};b.onkeydown=function(e){
+    if(e.key==="ArrowRight"){sel((i+1)%5);tabs[(i+1)%5].focus()}
+    if(e.key==="ArrowLeft"){sel((i+4)%5);tabs[(i+4)%5].focus()}}});
+  sel(0);
+
+  // reveal
+  var els=document.querySelectorAll(".rv");
+  if("IntersectionObserver" in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.12});
+    els.forEach(function(e){io.observe(e)});
+  }else els.forEach(function(e){e.classList.add("in")});
+
+  // typed terminal
+  var tty=document.getElementById("tty");
+  var lines=[
+    ["p","PS C:\\cases> ",". ./of14-shell.ps1 -Quiet"],
+    ["p","PS C:\\cases> ","./of14-smoke-test.ps1"],
+    ["d","","mesh ........ blockMesh"],
+    ["d","","check ....... checkMesh"],
+    ["d","","solve ....... icoFoam"],
+    ["d","","verify ...... cavity.foam written"],
+    ["g","","Mesh OK"]
+  ];
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+  function render(done,partial){
+    var h="";
+    for(var i=0;i<done;i++){var l=lines[i];h+=(l[1]?'<span class="p">'+esc(l[1])+'</span>':'')+'<span class="'+(l[0]==="p"?"":l[0])+'">'+esc(l[2])+'</span>\n'}
+    if(partial!==null&&done<lines.length){var c=lines[done];h+=(c[1]?'<span class="p">'+esc(c[1])+'</span>':'')+esc(c[2].slice(0,partial))}
+    tty.innerHTML=h+'<span class="cur"></span>';
+  }
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches){render(lines.length,null);return}
+  var li=0,ci=0;
+  (function tick(){
+    if(li>=lines.length){setTimeout(function(){li=0;ci=0;tick()},4500);render(lines.length,null);return}
+    var l=lines[li],typed=l[0]==="p";
+    if(typed&&ci<l[2].length){ci++;render(li,ci);setTimeout(tick,45)}
+    else{li++;ci=0;render(li,null);setTimeout(tick,typed?500:380)}
+  })();
+})();
+</script>
 </body>
 </html>
