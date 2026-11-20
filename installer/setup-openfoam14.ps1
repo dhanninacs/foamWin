@@ -12,11 +12,16 @@ if (-not (Test-Path "$PSScriptRoot/OpenFOAM-14/etc/configDict")) {
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 & robocopy "$PSScriptRoot/OpenFOAM-14" "$InstallDir/OpenFOAM-14" /E /NFL /NDL /NJH /NJS | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
-foreach ($name in @('of14-shell.bat','of14-shell.ps1','of14-smoke-test.ps1','of14-mesh-test.ps1','of14-env.ps1','of14-runtime-test.ps1','README.md')) {
+foreach ($name in @('of14-shell.bat','of14-shell.ps1','of14-smoke-test.ps1','of14-mesh-test.ps1','of14-cfmesh-test.ps1','of14-env.ps1','of14-runtime-test.ps1','README.md')) {
     Copy-Item "$PSScriptRoot/$name" $InstallDir -Force
 }
 if (Test-Path "$PSScriptRoot/runtime-licenses") {
     Copy-Item "$PSScriptRoot/runtime-licenses" $InstallDir -Recurse -Force
+}
+# Gmsh ships beside the scripts, as the GUI installer lays it out: of14-shell.ps1 puts this folder
+# on PATH and of14-env.ps1 reports it, so a ZIP install must carry it too.
+if (Test-Path "$PSScriptRoot/gmsh/gmsh.exe") {
+    Copy-Item "$PSScriptRoot/gmsh" $InstallDir -Recurse -Force
 }
 if (-not $NoShortcut) {
     $desktop = [Environment]::GetFolderPath('Desktop')

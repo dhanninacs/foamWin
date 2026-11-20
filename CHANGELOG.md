@@ -1,3 +1,7 @@
+# Unreleased
+
+- The portable ZIP's `setup-openfoam14.ps1` now installs the `gmsh` folder and `of14-cfmesh-test.ps1`, as the GUI installer already did. Before, a ZIP install had no Gmsh: `of14-shell.ps1` found nothing to put on PATH, `of14-env.ps1` reported `gmsh` as absent, and Stokes' Gmsh mesher could not run.
+
 # v14.0.0-win.5 — Graph partitioners and cfMesh
 
 - Ship the Scotch and METIS partitioners for `decomposePar`, and PT-Scotch and Zoltan for parallel redistribution and load balancing under Microsoft MPI. Their license texts are packaged under `runtime-licenses`.
