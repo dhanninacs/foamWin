@@ -1,5 +1,10 @@
 # Unreleased
 
+- `decomposePar` and `reconstructPar` load the generic patch-field libraries themselves on Windows, where the PE linker drops an unreferenced import. A case with a patch type from a library they had not loaded (`nutkWallFunction` in the kEpsilon cavity, `alphatJayatillekeWallFunction`, `v2WallFunction`) stopped at "Unknown patchField type" unless `-libs` was given.
+- `-libs` and `FOAM_LIBS` accept bare words, `'(lib1.dll lib2.dll)'` or a single `lib.dll`, as well as quoted names. PowerShell and MS-MPI's `mpiexec` strip the inner quotes, so every `-libs` given from either failed with "wrong token type - expected string".
+- `stopAtWriteNowSignal` now stops the run on Windows. Its handler was `sigWriteNow`'s, so Ctrl+Break with the switch set to 21 did not write and stop: the run died without writing.
+- The repository's 101 symlinks are regular copies of their targets. A Windows checkout made them empty files, and some are read at run time (`etc/caseDicts/postProcessing`, the dynamic-code thermo templates, test inputs).
+- Add `scripts/test-windows-fixes.ps1`, which checks the three fixes above on an installed runtime.
 - Ship `coupledSimpleFoam` (serial, Eigen backend), cross-built by the new `scripts/build-coupled.sh` from coupledSimpleFoam at `c2ca076`. Its `heatedDuct` tutorial matches the Linux build exactly, and Stokes' `coupled.simple` engine now runs natively on Windows. The PETSc backend for parallel runs is not built.
 - The portable ZIP's `setup-openfoam14.ps1` now installs the `gmsh` folder and `of14-cfmesh-test.ps1`, as the GUI installer already did. Before, a ZIP install had no Gmsh: `of14-shell.ps1` found nothing to put on PATH, `of14-env.ps1` reported `gmsh` as absent, and Stokes' Gmsh mesher could not run.
 

@@ -71,6 +71,10 @@ Native Windows testing covered:
 - The modern incompressibleFluid cavity with `foamRun` through time 10.
 - Actual installation, installed-package execution, and the Desktop shortcut.
 - Installation/case paths with spaces, runtime DLL imports, and ZIP integrity.
+- `scripts/test-windows-fixes.ps1 -RuntimeRoot <install> -OutputDirectory <new-folder>`:
+  `decomposePar` and `reconstructPar` without `-libs` on a wall-function case, `-libs` and
+  `FOAM_LIBS` with bare words (also through `mpiexec`), and Ctrl+Break with
+  `stopAtWriteNowSignal 21` writing the current time and ending the run.
 
 These are execution and smoke tests, not exhaustive physical-model benchmarks.
 
@@ -80,8 +84,11 @@ These are execution and smoke tests, not exhaustive physical-model benchmarks.
 - **64-bit Windows**, double precision, 32-bit labels.
 - ParaView is not bundled.
 - Runtime code compilation needs additional compiler configuration.
-- The build needs its external zlib dependency, and the partitioners and cfMesh
-  need their separately cloned sources (see below).
+- The build needs a MinGW zlib (on Ubuntu, `sudo apt install libz-mingw-w64-dev`), and the
+  partitioners and cfMesh need their separately cloned sources (see below).
+- `stopAtWriteNowSignal` and `writeNowSignal` are read from `configDict` at startup (the
+  installed one, or `%USERPROFILE%\.OpenFOAM\14\configDict`), not from a case's `controlDict`.
+  On Windows the usable signal is 21 (SIGBREAK, sent by Ctrl+Break).
 
 ## Source and packaging
 
