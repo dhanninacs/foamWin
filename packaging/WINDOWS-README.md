@@ -102,6 +102,14 @@ boundary layers and check the result. STL patches without a type are read as
 does. cfMesh is built from the open-source cfMesh-OpenFOAM13 fork with patches for
 OpenFOAM 14; see the source repository.
 
+## coupledSimpleFoam
+
+`coupledSimpleFoam` is included: a steady incompressible solver that solves
+velocity and pressure as one coupled system, run in a case directory with a
+`COUPLED` dictionary in `system/fvSolution`. This build is serial only (its Eigen
+backend); the PETSc backend for parallel runs is not included. It is built from
+the open-source coupledSimpleFoam repository (GPL-3.0); see the source repository.
+
 ## Attaching a CFD application
 
 The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,

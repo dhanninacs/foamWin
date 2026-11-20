@@ -192,6 +192,19 @@ check it. To build it, run `scripts/build-cfmesh.sh` with `CFMESH_SOURCE` set to
 clone of the fork. STL patches without a type are read as `empty`; set their type
 with a `renameBoundary` entry in `meshDict`, as the example does.
 
+## coupledSimpleFoam
+
+The packages include `coupledSimpleFoam`, a steady incompressible solver that solves
+velocity and pressure as one coupled system, built from
+[coupledSimpleFoam](https://github.com/dhanninacs/coupledSimpleFoam) at commit
+`c2ca076` with its serial Eigen backend (`COUPLED_NO_PETSC=1`). Its parallel PETSc
+backend is not built: PETSc and hypre have no MinGW and MS-MPI build here. Its
+`heatedDuct` tutorial gives the same result as the Linux build to every printed
+digit (11 iterations, Nusselt number 7.5416 against the exact 7.5407). To build it,
+run `scripts/build-coupled.sh` with `COUPLED_SOURCE` set to a clone of the
+repository and `EIGEN_INCLUDE` set to the Eigen 3 headers (Ubuntu:
+`/usr/include/eigen3`).
+
 ## Attaching a CFD application
 
 The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,

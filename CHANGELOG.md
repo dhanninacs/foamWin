@@ -1,5 +1,6 @@
 # Unreleased
 
+- Ship `coupledSimpleFoam` (serial, Eigen backend), cross-built by the new `scripts/build-coupled.sh` from coupledSimpleFoam at `c2ca076`. Its `heatedDuct` tutorial matches the Linux build exactly, and Stokes' `coupled.simple` engine now runs natively on Windows. The PETSc backend for parallel runs is not built.
 - The portable ZIP's `setup-openfoam14.ps1` now installs the `gmsh` folder and `of14-cfmesh-test.ps1`, as the GUI installer already did. Before, a ZIP install had no Gmsh: `of14-shell.ps1` found nothing to put on PATH, `of14-env.ps1` reported `gmsh` as absent, and Stokes' Gmsh mesher could not run.
 
 # v14.0.0-win.5 — Graph partitioners and cfMesh
