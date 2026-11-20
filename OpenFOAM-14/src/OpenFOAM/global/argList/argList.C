@@ -37,8 +37,63 @@ License
 #include "fileOperationInitialise.H"
 #include "stringListOps.H"
 #include "dlLibraryTable.H"
+#include "DynamicList.H"
 
 #include <cctype>
+
+// * * * * * * * * * * * * * * Local Functions  * * * * * * * * * * * * * * //
+
+namespace
+{
+
+// Read the library names given to -libs or in FOAM_LIBS. Accepts the usual
+// '("lib1.so" "lib2.so")' and also bare words, '(lib1.so lib2.so)' or a single
+// lib1.so: MS-MPI's mpiexec and PowerShell strip the inner quotes, which would
+// otherwise turn every name into a word and fail the read of a fileNameList.
+Foam::fileNameList readLibNames(const Foam::string& libsString)
+{
+    using namespace Foam;
+
+    IStringStream is(libsString);
+    DynamicList<fileName> names;
+
+    bool first = true;
+    for (token t(is); t.good(); t = token(is))
+    {
+        if (t.isWord())
+        {
+            names.append(t.wordToken());
+        }
+        else if (t.isString())
+        {
+            names.append(t.stringToken());
+        }
+        else if
+        (
+            t.isPunctuation()
+         && (t.pToken() == token::BEGIN_LIST || t.pToken() == token::END_LIST)
+        )
+        {}
+        else if (first && t.isLabel())
+        {
+            // List size prefix, as in 2("lib1.so" "lib2.so")
+        }
+        else
+        {
+            FatalIOErrorInFunction(is)
+                << "Unexpected token " << t << " in the library list "
+                << libsString << exit(FatalIOError);
+        }
+
+        first = false;
+    }
+
+    fileNameList result;
+    result.transfer(names);
+    return result;
+}
+
+} // End anonymous namespace
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -446,7 +501,7 @@ Foam::argList::argList
         const string libsString(getEnv("FOAM_LIBS"));
         if (!libsString.empty())
         {
-            libs.open(fileNameList((IStringStream(libsString))()));
+            libs.open(readLibNames(libsString));
         }
 
         for (int argi=0; argi<argc; argi++)
@@ -456,7 +511,7 @@ Foam::argList::argList
                 const char *optionName = &argv[argi][1];
                 if (string(optionName) == "libs")
                 {
-                    libs.open(fileNameList((IStringStream(argv[argi+1]))()));
+                    libs.open(readLibNames(argv[argi+1]));
                     break;
                 }
             }

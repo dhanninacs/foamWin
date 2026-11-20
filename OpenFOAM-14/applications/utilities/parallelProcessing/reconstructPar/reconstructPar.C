@@ -31,6 +31,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#include "dlLibraryTable.H"
 #include "timeSelector.H"
 #include "IOobjectList.H"
 #include "processorRunTimes.H"
@@ -202,6 +203,15 @@ int main(int argc, char *argv[])
 
     #include "setRootCaseNoFunctionObjects.H"
     #include "setMeshPath.H"
+
+    #ifdef _WIN32
+    // The PE linker drops an import library that no symbol references, so
+    // these DLLs are not loaded at startup as they are on Linux. Without them
+    // a patch type from an unloaded library is a fatal "Unknown patchField
+    // type" instead of being carried through as a generic patch field.
+    libs.open("libgenericFvFields.so", false);
+    libs.open("libgenericLagrangianFields.so", false);
+    #endif
 
     const bool writeCellProc = args.optionFound("cellProc");
 
