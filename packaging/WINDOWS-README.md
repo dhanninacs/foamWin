@@ -106,8 +106,11 @@ OpenFOAM 14; see the source repository.
 
 `coupledSimpleFoam` is included: a steady incompressible solver that solves
 velocity and pressure as one coupled system, run in a case directory with a
-`COUPLED` dictionary in `system/fvSolution`. This build is serial only (its Eigen
-backend); the PETSc backend for parallel runs is not included. It is built from
+`COUPLED` dictionary in `system/fvSolution`. `bin/coupledSimpleFoam.exe` is the serial
+build (Eigen backend) and needs no MPI. With Microsoft MPI installed, the shell uses
+`bin/msmpi/coupledSimpleFoam.exe` instead: the PETSc backend, which runs in parallel
+(`mpiexec -n 6 coupledSimpleFoam -parallel` after `decomposePar`, with
+`linearSolver PETSc;` in `COUPLED`) and on one core. It is built from
 the open-source coupledSimpleFoam repository (GPL-3.0); see the source repository.
 
 ## Attaching a CFD application

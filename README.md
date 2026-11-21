@@ -204,13 +204,31 @@ with a `renameBoundary` entry in `meshDict`, as the example does.
 The packages include `coupledSimpleFoam`, a steady incompressible solver that solves
 velocity and pressure as one coupled system, built from
 [coupledSimpleFoam](https://github.com/dhanninacs/coupledSimpleFoam) at commit
-`c2ca076` with its serial Eigen backend (`COUPLED_NO_PETSC=1`). Its parallel PETSc
-backend is not built: PETSc and hypre have no MinGW and MS-MPI build here. Its
-`heatedDuct` tutorial gives the same result as the Linux build to every printed
-digit (11 iterations, Nusselt number 7.5416 against the exact 7.5407). To build it,
-run `scripts/build-coupled.sh` with `COUPLED_SOURCE` set to a clone of the
-repository and `EIGEN_INCLUDE` set to the Eigen 3 headers (Ubuntu:
-`/usr/include/eigen3`).
+`c2ca076`, in two builds:
+
+- `bin/coupledSimpleFoam.exe`: the serial Eigen backend (`COUPLED_NO_PETSC=1`), which
+  needs no MPI. Its `heatedDuct` tutorial gives the same result as the Linux build to
+  every printed digit (11 iterations, Nusselt number 7.5416 against the exact 7.5407).
+- `bin/msmpi/coupledSimpleFoam.exe`: the PETSc backend over Microsoft MPI, with PETSc,
+  hypre and a C BLAS/LAPACK linked in statically. It imports `msmpi.dll`, so
+  `of14-shell.ps1` puts `bin/msmpi` ahead of `bin` only when Microsoft MPI is
+  installed, as it does for `lib/msmpi`; it also runs on one core.
+
+Run in parallel natively, the PETSc build matches the Linux one: a 1M-cell laminar
+square duct (Re 100, 6 MS-MPI ranks, Schur field split with hypre BoomerAMG)
+converged in 16 outer iterations and 77 s, against 70 s on WSL with the same
+settings, with the same friction factor to every printed digit (fRe 14.1396 against
+Shah & London's 14.227).
+
+To build them, first run `scripts/build-petsc.sh` with the Microsoft MPI SDK
+installer (`msmpisdk.msi`), PETSc, hypre and f2cblaslapack source tarballs and
+`PETSC_BUILD_ROOT` set to a new directory (it needs `msiextract`, Ubuntu
+`msitools`, and downloads nothing; tested with PETSc 3.22.2, hypre 2.32.0,
+f2cblaslapack 3.8.0.q2 and MS-MPI SDK 10.1.1). Then run `scripts/build-coupled.sh`
+with `COUPLED_SOURCE` set to a clone of the repository, `EIGEN_INCLUDE` set to the
+Eigen 3 headers (Ubuntu: `/usr/include/eigen3`), and the `PETSC_DIR`, `PETSC_ARCH`
+and `MSMPI_ROOT` that `build-petsc.sh` prints. Without `PETSC_DIR` only the serial
+build is made.
 
 ## Attaching a CFD application
 

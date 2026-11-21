@@ -72,7 +72,9 @@ if ($mpiRuntime -and $mpiBackend) {
     $env:FOAM_MPI = 'msmpi'
     $env:WM_MPLIB = 'MSMPI'
     $env:FOAM_MPIEXEC = Join-Path $mpiRuntime 'mpiexec.exe'
-    $env:PATH = "$platform/bin;$platform/lib;$platform/lib/msmpi;$platform/lib/dummy;$mpiRuntime;$env:PATH"
+    # bin/msmpi holds tools built against MS-MPI (coupledSimpleFoam's PETSc backend); they
+    # shadow the serial builds in bin only while Microsoft MPI is present.
+    $env:PATH = "$platform/bin/msmpi;$platform/bin;$platform/lib;$platform/lib/msmpi;$platform/lib/dummy;$mpiRuntime;$env:PATH"
 } else {
     $env:FOAM_MPI = 'dummy'
     $env:WM_MPLIB = 'dummy'

@@ -1,5 +1,6 @@
 # Unreleased
 
+- Ship coupledSimpleFoam's PETSc backend as `bin/msmpi/coupledSimpleFoam.exe`, used in place of the serial build when Microsoft MPI is installed, so coupled runs go parallel natively. The new `scripts/build-petsc.sh` cross-builds a static PETSc with hypre and a C BLAS/LAPACK against the Microsoft MPI SDK (unpacked with `msiextract`), and `scripts/build-coupled.sh` builds the PETSc variant when given `PETSC_DIR`. A 1M-cell laminar square duct on 6 ranks converged in 16 iterations and 77 s natively against 70 s on WSL, with the same friction factor.
 - `decomposePar` and `reconstructPar` load the generic patch-field libraries themselves on Windows, where the PE linker drops an unreferenced import. A case with a patch type from a library they had not loaded (`nutkWallFunction` in the kEpsilon cavity, `alphatJayatillekeWallFunction`, `v2WallFunction`) stopped at "Unknown patchField type" unless `-libs` was given.
 - `-libs` and `FOAM_LIBS` accept bare words, `'(lib1.dll lib2.dll)'` or a single `lib.dll`, as well as quoted names. PowerShell and MS-MPI's `mpiexec` strip the inner quotes, so every `-libs` given from either failed with "wrong token type - expected string".
 - `stopAtWriteNowSignal` now stops the run on Windows. Its handler was `sigWriteNow`'s, so Ctrl+Break with the switch set to 21 did not write and stop: the run died without writing.
