@@ -66,6 +66,85 @@ bool Foam::UOPstream::write
     PstreamGlobals::checkCommunicator(communicator, toProcNo);
 
 
+    // Split a large message into pieces (see PstreamGlobals.H)
+    const int chunk = PstreamGlobals::chunkSize();
+
+    if (PstreamGlobals::splitMessage(bufSize))
+    {
+        if
+        (
+            commsType != commsTypes::blocking
+         && commsType != commsTypes::scheduled
+         && commsType != commsTypes::nonBlocking
+        )
+        {
+            FatalErrorInFunction
+                << "Unsupported communications type "
+                << UPstream::commsTypeNames[commsType]
+                << Foam::abort(FatalError);
+        }
+
+        const MPI_Comm comm = PstreamGlobals::MPICommunicators_[communicator];
+        const label owner = PstreamGlobals::outstandingRequests_.size();
+
+        bool failed = false;
+        std::streamsize offset = 0;
+
+        for (bool first = true; ; first = false)
+        {
+            const std::streamsize left = bufSize - offset;
+            const int n = left >= chunk ? chunk : int(left);
+            char* piece = const_cast<char*>(buf) + offset;
+
+            if (commsType == commsTypes::blocking)
+            {
+                failed = MPI_Bsend(piece, n, MPI_BYTE, toProcNo, tag, comm)
+                      || failed;
+            }
+            else if (commsType == commsTypes::scheduled)
+            {
+                failed = MPI_Send(piece, n, MPI_BYTE, toProcNo, tag, comm)
+                      || failed;
+            }
+            else
+            {
+                MPI_Request request;
+                failed =
+                    MPI_Isend(piece, n, MPI_BYTE, toProcNo, tag, comm, &request)
+                 || failed;
+
+                if (first)
+                {
+                    PstreamGlobals::outstandingRequests_.append(request);
+                }
+                else
+                {
+                    PstreamGlobals::appendChunkRequest(owner, request);
+                }
+            }
+
+            offset += n;
+
+            // A short piece (possibly empty) ends the message
+            if (n < chunk)
+            {
+                break;
+            }
+        }
+
+        if (debug)
+        {
+            Pout<< "UOPstream::write : split write to:" << toProcNo
+                << " tag:" << tag << " size:" << label(bufSize)
+                << " pieces of:" << chunk
+                << " commsType:" << UPstream::commsTypeNames[commsType]
+                << Foam::endl;
+        }
+
+        return !failed;
+    }
+
+
     bool transferFailed = true;
 
     if (commsType == commsTypes::blocking)

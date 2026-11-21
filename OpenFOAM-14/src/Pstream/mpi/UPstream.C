@@ -161,6 +161,8 @@ void Foam::UPstream::exit(int errnum)
     delete[] buff;
     #endif
 
+    PstreamGlobals::resetChunkRequests(0);
+
     if (PstreamGlobals::outstandingRequests_.size())
     {
         label n = PstreamGlobals::outstandingRequests_.size();
@@ -695,6 +697,8 @@ Foam::label Foam::UPstream::nRequests()
 
 void Foam::UPstream::resetRequests(const label i)
 {
+    PstreamGlobals::resetChunkRequests(i);
+
     if (i < PstreamGlobals::outstandingRequests_.size())
     {
         PstreamGlobals::outstandingRequests_.setSize(i);
@@ -733,6 +737,8 @@ void Foam::UPstream::waitRequests(const label start)
             FatalErrorInFunction
                 << "MPI_Waitall returned with error" << Foam::endl;
         }
+
+        PstreamGlobals::waitChunkRequests(start);
 
         resetRequests(start);
     }
@@ -775,6 +781,8 @@ void Foam::UPstream::waitRequest(const label i)
             << "MPI_Wait returned with error" << Foam::endl;
     }
 
+    PstreamGlobals::waitChunkRequest(i);
+
     if (debug)
     {
         Pout<< "UPstream::waitRequest : finished wait for request:" << i
@@ -809,13 +817,16 @@ bool Foam::UPstream::finishedRequest(const label i)
         MPI_STATUS_IGNORE
     );
 
+    // A split message is finished when all of its pieces are
+    const bool piecesFinished = PstreamGlobals::finishedChunkRequests(i);
+
     if (debug)
     {
         Pout<< "UPstream::finishedRequest : finished request:" << i
             << endl;
     }
 
-    return flag != 0;
+    return flag != 0 && piecesFinished;
 }
 
 

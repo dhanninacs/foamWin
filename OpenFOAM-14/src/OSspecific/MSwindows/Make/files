@@ -13,5 +13,7 @@ cpuTime/cpuTime.C
 clockTime/clockTime.C
 memInfo/memInfo.C
 fileMonitor.C
+largeBlockCache.C
+processQoS.C
 
 LIB = $(FOAM_LIBBIN)/libOSspecific

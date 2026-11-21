@@ -24,6 +24,9 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "PstreamGlobals.H"
+#include "error.H"
+
+#include <cstdlib>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,6 +68,149 @@ DynamicList<int> PstreamGlobals::freedTags_;
 DynamicList<MPI_Comm> PstreamGlobals::MPICommunicators_;
 DynamicList<MPI_Group> PstreamGlobals::MPIGroups_;
 //! \endcond
+
+// Further pieces of split non-blocking messages, see PstreamGlobals.H
+DynamicList<MPI_Request> PstreamGlobals::chunkRequests_;
+DynamicList<label> PstreamGlobals::chunkOwners_;
+
+
+int PstreamGlobals::chunkSize()
+{
+    static const int size = []()
+    {
+        #ifdef MSMPI_VER
+        int value = 4080;
+        #else
+        int value = 0;
+        #endif
+
+        const char* env = ::getenv("FOAM_MPI_CHUNK_SIZE");
+        if (env && *env)
+        {
+            value = ::atoi(env);
+        }
+
+        // A piece must be able to carry data
+        return value > 0 ? value : 0;
+    }();
+
+    return size;
+}
+
+
+std::streamsize PstreamGlobals::chunkMax()
+{
+    static const std::streamsize size = []()
+    {
+        std::streamsize value = 131072;
+
+        const char* env = ::getenv("FOAM_MPI_CHUNK_MAX");
+        if (env && *env)
+        {
+            value = ::atoll(env);
+        }
+
+        return value;
+    }();
+
+    return size;
+}
+
+
+bool PstreamGlobals::splitMessage(const std::streamsize size)
+{
+    const int chunk = chunkSize();
+    return chunk > 0 && chunkMax() > chunk && size >= chunk && size < chunkMax();
+}
+
+
+void PstreamGlobals::appendChunkRequest
+(
+    const label i,
+    const MPI_Request request
+)
+{
+    chunkRequests_.append(request);
+    chunkOwners_.append(i);
+}
+
+
+void PstreamGlobals::waitChunkRequests(const label start)
+{
+    // Owners never decrease along the list, so ours are a tail
+    label first = chunkOwners_.size();
+    while (first > 0 && chunkOwners_[first - 1] >= start)
+    {
+        --first;
+    }
+
+    if (first < chunkRequests_.size())
+    {
+        if
+        (
+            MPI_Waitall
+            (
+                chunkRequests_.size() - first,
+                chunkRequests_.begin() + first,
+                MPI_STATUSES_IGNORE
+            )
+        )
+        {
+            FatalErrorInFunction
+                << "MPI_Waitall returned with error" << Foam::endl;
+        }
+    }
+
+    resetChunkRequests(start);
+}
+
+
+void PstreamGlobals::waitChunkRequest(const label i)
+{
+    forAll(chunkOwners_, j)
+    {
+        if (chunkOwners_[j] == i)
+        {
+            if (MPI_Wait(&chunkRequests_[j], MPI_STATUS_IGNORE))
+            {
+                FatalErrorInFunction
+                    << "MPI_Wait returned with error" << Foam::endl;
+            }
+        }
+    }
+}
+
+
+bool PstreamGlobals::finishedChunkRequests(const label i)
+{
+    bool finished = true;
+
+    forAll(chunkOwners_, j)
+    {
+        if (chunkOwners_[j] == i)
+        {
+            int flag = 0;
+            MPI_Test(&chunkRequests_[j], &flag, MPI_STATUS_IGNORE);
+            finished = finished && flag;
+        }
+    }
+
+    return finished;
+}
+
+
+void PstreamGlobals::resetChunkRequests(const label start)
+{
+    label first = chunkOwners_.size();
+    while (first > 0 && chunkOwners_[first - 1] >= start)
+    {
+        --first;
+    }
+
+    chunkRequests_.setSize(first);
+    chunkOwners_.setSize(first);
+}
+
 
 void PstreamGlobals::checkCommunicator
 (

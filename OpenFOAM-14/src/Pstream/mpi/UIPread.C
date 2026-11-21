@@ -32,6 +32,83 @@ Description
 
 #include <mpi.h>
 
+// * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * * //
+
+namespace
+{
+
+// Receive a message whose size is not known in advance into buf, which grows
+// to hold it, and return its size.  A split message (see PstreamGlobals.H)
+// arrives as pieces of chunkSize() bytes ended by a shorter piece.
+Foam::label receiveProbed
+(
+    const int fromProcNo,
+    const int tag,
+    const Foam::label comm,
+    Foam::DynamicList<char>& buf
+)
+{
+    const int chunk = Foam::PstreamGlobals::chunkSize();
+    const MPI_Comm mpiComm = Foam::PstreamGlobals::MPICommunicators_[comm];
+
+    int source = fromProcNo;
+    Foam::label total = 0;
+    buf.clear();
+
+    while (true)
+    {
+        MPI_Status status;
+        MPI_Probe(source, tag, mpiComm, &status);
+        source = status.MPI_SOURCE;
+
+        int n = 0;
+        MPI_Get_count(&status, MPI_BYTE, &n);
+
+        if (buf.capacity() < total + n)
+        {
+            buf.setCapacity(Foam::max(2*buf.capacity(), total + n));
+        }
+
+        if
+        (
+            MPI_Recv
+            (
+                buf.begin() + total,
+                n,
+                MPI_BYTE,
+                source,
+                tag,
+                mpiComm,
+                MPI_STATUS_IGNORE
+            )
+        )
+        {
+            FatalErrorInFunction
+                << "MPI_Recv cannot receive incoming message"
+                << Foam::abort(Foam::FatalError);
+        }
+
+        total += n;
+        buf.setSize(total);
+
+        // Only a first message of exactly chunk bytes is followed by pieces,
+        // and they end with a shorter one
+        if
+        (
+            chunk <= 0
+         || Foam::PstreamGlobals::chunkMax() <= chunk
+         || n != chunk
+        )
+        {
+            break;
+        }
+    }
+
+    return total;
+}
+
+} // End anonymous namespace
+
 // * * * * * * * * * * * * * * * * Constructor * * * * * * * * * * * * * * * //
 
 Foam::UIPstream::UIPstream
@@ -67,8 +144,6 @@ Foam::UIPstream::UIPstream
     }
     else
     {
-        MPI_Status status;
-
         label wantedSize = externalBuf_.capacity();
 
         if (debug)
@@ -84,34 +159,26 @@ Foam::UIPstream::UIPstream
         // and set it
         if (!wantedSize)
         {
-            MPI_Probe
-            (
-                fromProcNo_,
-                tag_,
-                PstreamGlobals::MPICommunicators_[comm_],
-                &status
-            );
-            MPI_Get_count(&status, MPI_BYTE, &messageSize_);
-
-            externalBuf_.setCapacity(messageSize_);
-            wantedSize = messageSize_;
+            messageSize_ = receiveProbed(fromProcNo_, tag_, comm_, externalBuf_);
 
             if (debug)
             {
-                Pout<< "UIPstream::UIPstream : probed size:" << wantedSize
+                Pout<< "UIPstream::UIPstream : probed size:" << messageSize_
                     << Foam::endl;
             }
         }
-
-        messageSize_ = UIPstream::read
-        (
-            commsType,
-            fromProcNo_,
-            externalBuf_.begin(),
-            wantedSize,
-            tag_,
-            comm_
-        );
+        else
+        {
+            messageSize_ = UIPstream::read
+            (
+                commsType,
+                fromProcNo_,
+                externalBuf_.begin(),
+                wantedSize,
+                tag_,
+                comm_
+            );
+        }
 
         // Set addressed size. Leave actual allocated memory intact.
         externalBuf_.setSize(messageSize_);
@@ -168,8 +235,6 @@ Foam::UIPstream::UIPstream(const int fromProcNo, PstreamBuffers& buffers)
     }
     else
     {
-        MPI_Status status;
-
         label wantedSize = externalBuf_.capacity();
 
         if (debug)
@@ -185,34 +250,26 @@ Foam::UIPstream::UIPstream(const int fromProcNo, PstreamBuffers& buffers)
         // and set it
         if (!wantedSize)
         {
-            MPI_Probe
-            (
-                fromProcNo_,
-                tag_,
-                PstreamGlobals::MPICommunicators_[comm_],
-                &status
-            );
-            MPI_Get_count(&status, MPI_BYTE, &messageSize_);
-
-            externalBuf_.setCapacity(messageSize_);
-            wantedSize = messageSize_;
+            messageSize_ = receiveProbed(fromProcNo_, tag_, comm_, externalBuf_);
 
             if (debug)
             {
                 Pout<< "UIPstream::UIPstream PstreamBuffers : probed size:"
-                    << wantedSize << Foam::endl;
+                    << messageSize_ << Foam::endl;
             }
         }
-
-        messageSize_ = UIPstream::read
-        (
-            commsType(),
-            fromProcNo_,
-            externalBuf_.begin(),
-            wantedSize,
-            tag_,
-            comm_
-        );
+        else
+        {
+            messageSize_ = UIPstream::read
+            (
+                commsType(),
+                fromProcNo_,
+                externalBuf_.begin(),
+                wantedSize,
+                tag_,
+                comm_
+            );
+        }
 
         // Set addressed size. Leave actual allocated memory intact.
         externalBuf_.setSize(messageSize_);
@@ -254,6 +311,177 @@ Foam::label Foam::UIPstream::read
             << " warnComm:" << UPstream::warnComm
             << Foam::endl;
         error::printStack(Pout);
+    }
+
+    // A message that may have been split (see PstreamGlobals.H).  A smaller
+    // buffer can only hold a message that was sent whole.
+    const int chunk = PstreamGlobals::chunkSize();
+
+    if (chunk > 0 && PstreamGlobals::chunkMax() > chunk && bufSize >= chunk)
+    {
+        const MPI_Comm comm = PstreamGlobals::MPICommunicators_[communicator];
+
+        if
+        (
+            commsType == commsTypes::blocking
+         || commsType == commsTypes::scheduled
+        )
+        {
+            // The sender's size need not fill buf, so the first message
+            // tells: exactly chunk bytes means pieces follow
+            MPI_Status probed;
+            MPI_Probe(fromProcNo, tag, comm, &probed);
+            const int source = probed.MPI_SOURCE;
+
+            int firstSize = 0;
+            MPI_Get_count(&probed, MPI_BYTE, &firstSize);
+
+            if (firstSize != chunk)
+            {
+                // Sent whole
+                MPI_Status status;
+                if
+                (
+                    MPI_Recv(buf, bufSize, MPI_BYTE, source, tag, comm, &status)
+                )
+                {
+                    FatalErrorInFunction
+                        << "MPI_Recv cannot receive incoming message"
+                        << Foam::abort(FatalError);
+
+                    return 0;
+                }
+
+                int messageSize = 0;
+                MPI_Get_count(&status, MPI_BYTE, &messageSize);
+
+                if (messageSize > bufSize)
+                {
+                    FatalErrorInFunction
+                        << "buffer (" << label(bufSize)
+                        << ") not large enough for incoming message ("
+                        << messageSize << ')'
+                        << Foam::abort(FatalError);
+                }
+
+                return messageSize;
+            }
+
+            // Pieces until a short one
+            label total = 0;
+
+            while (true)
+            {
+                const std::streamsize left = bufSize - total;
+                const int wanted = left >= chunk ? chunk : int(left);
+
+                MPI_Status status;
+                if
+                (
+                    MPI_Recv
+                    (
+                        buf + total,
+                        wanted,
+                        MPI_BYTE,
+                        source,
+                        tag,
+                        comm,
+                        &status
+                    )
+                )
+                {
+                    FatalErrorInFunction
+                        << "MPI_Recv cannot receive incoming message"
+                        << Foam::abort(FatalError);
+
+                    return 0;
+                }
+
+                int n = 0;
+                MPI_Get_count(&status, MPI_BYTE, &n);
+                total += n;
+
+                if (n < chunk)
+                {
+                    break;
+                }
+            }
+
+            if (debug)
+            {
+                Pout<< "UIPstream::read : finished split read from:"
+                    << fromProcNo << " tag:" << tag << " read size:" << total
+                    << " commsType:" << UPstream::commsTypeNames[commsType]
+                    << Foam::endl;
+            }
+
+            return total;
+        }
+        else if
+        (
+            commsType == commsTypes::nonBlocking
+         && PstreamGlobals::splitMessage(bufSize)
+        )
+        {
+            // Non-blocking receives are always posted with the exact size,
+            // so the pieces are known in advance
+            const label owner = PstreamGlobals::outstandingRequests_.size();
+            std::streamsize offset = 0;
+
+            for (bool first = true; ; first = false)
+            {
+                const std::streamsize left = bufSize - offset;
+                const int n = left >= chunk ? chunk : int(left);
+
+                MPI_Request request;
+                if
+                (
+                    MPI_Irecv
+                    (
+                        buf + offset,
+                        n,
+                        MPI_BYTE,
+                        fromProcNo,
+                        tag,
+                        comm,
+                        &request
+                    )
+                )
+                {
+                    FatalErrorInFunction
+                        << "MPI_Recv cannot start non-blocking receive"
+                        << Foam::abort(FatalError);
+
+                    return 0;
+                }
+
+                if (first)
+                {
+                    PstreamGlobals::outstandingRequests_.append(request);
+                }
+                else
+                {
+                    PstreamGlobals::appendChunkRequest(owner, request);
+                }
+
+                offset += n;
+
+                if (n < chunk)
+                {
+                    break;
+                }
+            }
+
+            if (debug)
+            {
+                Pout<< "UIPstream::read : started split read from:"
+                    << fromProcNo << " tag:" << tag
+                    << " read size:" << label(bufSize)
+                    << " request:" << owner << Foam::endl;
+            }
+
+            return bufSize;
+        }
     }
 
     if (commsType == commsTypes::blocking || commsType == commsTypes::scheduled)
