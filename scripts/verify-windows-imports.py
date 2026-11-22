@@ -28,10 +28,11 @@ class PE:
 
 # Each backend directory (lib/dummy, lib/msmpi) supplies Pstream and may supply
 # partitioners. Resolve DLLs in of14-shell.ps1's PATH order for that backend:
-# bin, lib, lib/<backend>, then lib/dummy. A later same-named DLL is shadowed.
-system_dlls = {'kernel32.dll','msvcrt.dll','advapi32.dll','user32.dll','imagehlp.dll','msmpi.dll'}
+# bin/msmpi (MS-MPI only), bin, lib, lib/<backend>, then lib/dummy. A later
+# same-named file is shadowed.
+system_dlls = {'kernel32.dll','msvcrt.dll','advapi32.dll','user32.dll','imagehlp.dll','gdi32.dll','msmpi.dll'}
 all_files = list(root.rglob('*.dll')) + list(root.rglob('*.exe'))
-backend_dirs = {root/'lib'/name for name in ('dummy','msmpi')}
+backend_dirs = {root/'lib'/name for name in ('dummy','msmpi')} | {root/'bin'/'msmpi'}
 backends = [name for name in ('dummy','msmpi') if (root/'lib'/name/'libPstream.dll').is_file()]
 errors = []
 seen = {}
@@ -40,7 +41,7 @@ for p in all_files:
  if key in seen: errors.append(f'Windows filename collision: {seen[key]} and {p}')
  seen[key] = p
 for backend in backends:
- order = [root/'bin', root/'lib', root/'lib'/backend] + ([root/'lib'/'dummy'] if backend != 'dummy' else [])
+ order = ([root/'bin'/'msmpi'] if backend == 'msmpi' else []) + [root/'bin', root/'lib', root/'lib'/backend] + ([root/'lib'/'dummy'] if backend != 'dummy' else [])
  rank = lambda p: order.index(p.parent) if p.parent in order else len(order)
  index = {}
  for p in sorted((p for p in all_files if p.parent not in backend_dirs or p.parent in order), key=rank):

@@ -1,4 +1,4 @@
-# Unreleased
+# v14.0.0-win.6 — Parallel coupled solver and native speed
 
 - Native runs are as fast as OpenFOAM 14 on WSL on the same machine: 3–4% faster on one core and 5–7% slower on 16 MPI ranks, against 43–67% and 21–51% slower before. Measured on an i9-13900 with the `pitzDailySteady` tutorial refined to 196k cells and a 343k-cell steady 3D lid-driven cavity, three interleaved runs each, with residuals identical to WSL's in every run. Four changes:
   - **Large heap blocks are reused.** The C runtime (`msvcrt`) hands every block above its heap threshold back to Windows, so each temporary field was faulted in and zeroed page by page again: 13× the page faults and 6× the kernel time of the Linux run. `libOpenFOAM` now replaces `operator new`/`delete` (`src/OSspecific/MSwindows/largeBlockCache.C`) and keeps freed blocks of 64 KiB and more, up to 1 GiB, for reuse. Every block is still a plain `malloc` block, so memory still passes safely between these operators and `libstdc++` or `free()`.
@@ -7,6 +7,7 @@
   - The MinGW build uses `-O3`, as the Linux build does (1–2.5%).
 
 - Ship coupledSimpleFoam's PETSc backend as `bin/msmpi/coupledSimpleFoam.exe`, used in place of the serial build when Microsoft MPI is installed, so coupled runs go parallel natively. The new `scripts/build-petsc.sh` cross-builds a static PETSc with hypre and a C BLAS/LAPACK against the Microsoft MPI SDK (unpacked with `msiextract`), and `scripts/build-coupled.sh` builds the PETSc variant when given `PETSC_DIR`. A 1M-cell laminar square duct on 6 ranks converged in 16 iterations and 77 s natively against 70 s on WSL, with the same friction factor.
+- The packages carry the license texts of Eigen, PETSc, hypre and the reference BLAS/LAPACK in `runtime-licenses`, and `make-installer.sh` refuses to package a coupledSimpleFoam build without them. The import check follows `bin/msmpi` first for the Microsoft MPI backend, so it now checks the PETSc build too.
 - `decomposePar` and `reconstructPar` load the generic patch-field libraries themselves on Windows, where the PE linker drops an unreferenced import. A case with a patch type from a library they had not loaded (`nutkWallFunction` in the kEpsilon cavity, `alphatJayatillekeWallFunction`, `v2WallFunction`) stopped at "Unknown patchField type" unless `-libs` was given.
 - `-libs` and `FOAM_LIBS` accept bare words, `'(lib1.dll lib2.dll)'` or a single `lib.dll`, as well as quoted names. PowerShell and MS-MPI's `mpiexec` strip the inner quotes, so every `-libs` given from either failed with "wrong token type - expected string".
 - `stopAtWriteNowSignal` now stops the run on Windows. Its handler was `sigWriteNow`'s, so Ctrl+Break with the switch set to 21 did not write and stop: the run died without writing.

@@ -14,9 +14,9 @@ validation details, limitations and the application attachment guide.
 
 ## Download and install
 
-The latest release is **v14.0.0-win.3**, adding native application attachment support.
-Microsoft MPI support was introduced in v14.0.0-win.2.
-The original serial release remains available as v14.0.0-win.1.
+The latest release is **v14.0.0-win.6**: coupledSimpleFoam in serial and, with
+Microsoft MPI, in parallel through PETSc, and native runs as fast as OpenFOAM on WSL.
+Earlier releases remain available on the releases page.
 Its distribution files retain the tested OpenFOAM package names:
 
 | File | Purpose |

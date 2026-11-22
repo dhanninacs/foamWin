@@ -78,6 +78,29 @@ if [ -f "$STAGE/OpenFOAM-14/platforms/$OPTIONS/lib/msmpi/libzoltanDecomp.dll" ];
     mkdir -p "$STAGE/runtime-licenses/zoltan"
     cp "$ZOLTAN_LICENSE_FILE" "$STAGE/runtime-licenses/zoltan/"
 fi
+# coupledSimpleFoam's serial build compiles in Eigen (MPL 2.0); its PETSc build
+# links PETSc, hypre and f2cblaslapack (reference BLAS/LAPACK) statically.
+if [ -f "$BIN/coupledSimpleFoam.exe" ]; then
+    EIGEN_LICENSE_FILE=${EIGEN_LICENSE_FILE:-/usr/share/doc/libeigen3-dev/copyright}
+    test -f "$EIGEN_LICENSE_FILE"
+    mkdir -p "$STAGE/runtime-licenses/eigen"
+    cp "$EIGEN_LICENSE_FILE" "$STAGE/runtime-licenses/eigen/"
+fi
+if [ -f "$BIN/msmpi/coupledSimpleFoam.exe" ]; then
+    : "${PETSC_DIR:?Set PETSC_DIR (and PETSC_ARCH) to the PETSc build linked into bin/msmpi}"
+    PETSC_ARCH=${PETSC_ARCH:-mingw-msmpi-opt}
+    LAPACK_LICENSE_FILE=${LAPACK_LICENSE_FILE:-/usr/share/doc/liblapack3/copyright}
+    HYPRE=$(find "$PETSC_DIR/$PETSC_ARCH/externalpackages" -maxdepth 1 -type d -name 'hypre-*' | head -1)
+    test -f "$PETSC_DIR/LICENSE"
+    test -f "$HYPRE/COPYRIGHT"
+    test -f "$LAPACK_LICENSE_FILE"
+    mkdir -p "$STAGE/runtime-licenses/petsc" "$STAGE/runtime-licenses/hypre" \
+        "$STAGE/runtime-licenses/blas-lapack"
+    cp "$PETSC_DIR/LICENSE" "$STAGE/runtime-licenses/petsc/"
+    cp "$HYPRE/COPYRIGHT" "$HYPRE/LICENSE-APACHE" "$HYPRE/LICENSE-MIT" "$HYPRE/NOTICE" \
+        "$STAGE/runtime-licenses/hypre/"
+    cp "$LAPACK_LICENSE_FILE" "$STAGE/runtime-licenses/blas-lapack/"
+fi
 cp -a "$STAGE/runtime-licenses" "$STAGE/OpenFOAM-14/"
 python3 "$REPO/scripts/verify-windows-imports.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS"
 python3 "$REPO/scripts/stage-gmsh.py" "$STAGE" --cache "${FOAMWIN_DOWNLOAD_CACHE:-$OUT/download-cache}"
