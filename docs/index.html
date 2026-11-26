@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FoamWin — OpenFOAM 14 for Windows</title>
-<meta name="description" content="FoamWin is a community native Windows x64 port of Foundation OpenFOAM 14. MinGW-w64 build, PowerShell launcher, guided installer, Microsoft MPI, cfMesh and graph partitioners. No MSYS2, no WSL at runtime.">
+<meta name="description" content="FoamWin is a community native Windows x64 port of Foundation OpenFOAM 14. MinGW-w64 build, PowerShell launcher, guided installer, Microsoft MPI, cfMesh, a coupled pressure-velocity solver and an NVIDIA GPU solver. No MSYS2, no WSL at runtime.">
 <meta name="author" content="dhanninacs">
 <link rel="canonical" href="https://dhanninacs.github.io/foamWin/">
 <meta property="og:type" content="website">
@@ -137,6 +137,42 @@ h2 + p{margin-top:18px;color:var(--ink-2);max-width:30em}
 .chips span{font:400 13px var(--mono);border:1.5px solid var(--ink);border-radius:99px;padding:4px 12px}
 @media(max-width:760px){.two{grid-template-columns:1fr}}
 
+/* solvers */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:44px}
+.card{min-width:0;border:1.5px solid var(--ink);border-radius:12px;background:var(--paper);padding:26px;display:flex;flex-direction:column;gap:12px}
+.card .k{margin:0}
+.card h3{font-size:26px;letter-spacing:-.03em;line-height:1.1}
+.card p{color:var(--ink-2);font-size:16px}
+.card pre{overflow-wrap:anywhere;background:var(--term);color:var(--term-ink);padding:14px 16px;border-radius:8px;white-space:pre-wrap;line-height:1.7;margin-top:auto}
+.card pre .d{color:var(--term-dim)}
+.card.hot{border-color:var(--accent);box-shadow:6px 6px 0 var(--accent)}
+@media(max-width:900px){.cards{grid-template-columns:minmax(0,1fr)}}
+
+/* benchmarks */
+.bench{margin-top:44px;display:grid;gap:34px}
+.case h3{font-size:20px;letter-spacing:-.01em}
+.case h3 small{font:400 13px var(--mono);color:var(--ink-2);margin-left:8px}
+.br{display:grid;grid-template-columns:minmax(110px,190px) minmax(0,1fr) 96px;gap:14px;align-items:center;margin-top:10px;font-size:15px}
+.br .who{color:var(--ink-2)}
+.br .track{height:22px;background:var(--paper-2);border-radius:5px;overflow:hidden}
+.br .fill{height:100%;background:var(--ink-2);border-radius:5px}
+.br.gpu .fill{background:var(--accent)}
+.br.gpu .who,.br.gpu .v{color:var(--ink);font-weight:600}
+.br.seg .fill{background:color-mix(in srgb,var(--ink-2) 45%,var(--paper-2))}
+.br .v{font:500 14px var(--mono);text-align:right;white-space:nowrap}
+@media(max-width:600px){.br{grid-template-columns:1fr 84px}.br .who{grid-column:1/-1;margin-bottom:-6px}}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:48px}
+.stat{border-top:1.5px solid var(--ink);padding-top:16px}
+.stat b{display:block;font-size:clamp(30px,4vw,46px);letter-spacing:-.04em;line-height:1}
+.stat span{display:block;margin-top:8px;color:var(--ink-2);font-size:15px}
+@media(max-width:760px){.stats{grid-template-columns:1fr}}
+.btab{width:100%;border-collapse:collapse;margin-top:16px;font-size:15px}
+.btab th,.btab td{text-align:right;padding:11px 0 11px 12px;border-bottom:1px solid var(--line)}
+.btab th:first-child,.btab td:first-child{text-align:left;padding-left:0}
+.btab th{font:500 12px var(--mono);color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em}
+.btab td{font-variant-numeric:tabular-nums}
+.tscroll{overflow-x:auto}
+
 /* evidence */
 .dark{background:var(--term);color:var(--term-ink)}
 .dark h2 + p,.dark .note{color:var(--term-dim)}
@@ -194,7 +230,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
   <div class="wrap">
     <a class="brand" href="./" translate="no"><i><svg viewBox="0 0 24 24"><path d="M3 16c3-9 6-9 9-4s6 5 9-4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></i>FoamWin</a>
     <nav class="nav" aria-label="Site">
-      <a href="#port">Port</a><a href="#workflow">Workflow</a><a href="#ships">Downloads</a><a href="#evidence">Evidence</a>
+      <a href="#port">Port</a><a href="#workflow">Workflow</a><a href="#solvers">Solvers</a><a href="#benchmarks">Benchmarks</a><a href="#ships">Downloads</a>
       <a href="https://dhanninacs.github.io/stokes-cfd/">Stokes ↗</a>
       <a class="keep" href="https://github.com/dhanninacs/foamWin">GitHub ↗</a>
     </nav>
@@ -209,7 +245,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
     <div>
       <p class="tag"><b>v14.0.0-win.7</b> · community port of Foundation OpenFOAM 14</p>
       <h1>OpenFOAM, <u>native</u> on Windows.</h1>
-      <p class="lede">Real <code>.exe</code> and <code>.dll</code> files, a PowerShell launcher and an installer. No MSYS2, no WSL, no Linux at runtime.</p>
+      <p class="lede">Real <code>.exe</code> and <code>.dll</code> files, a PowerShell launcher and an installer. No MSYS2, no WSL, no Linux at runtime. Now with a coupled solver that runs on an NVIDIA GPU — <a class="lnk" href="#benchmarks">15–25× faster</a> than OpenFOAM's own solvers on the cases measured.</p>
       <div class="cta">
         <a class="btn" href="https://github.com/dhanninacs/foamWin/releases/latest">Get the installer ↓</a>
         <a class="btn ghost" href="https://github.com/dhanninacs/foamWin">Read the source</a>
@@ -229,9 +265,9 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
 <div class="facts">
   <div class="wrap">
     <div class="fact"><b>14</b><span>OpenFOAM release, ported whole</span></div>
-    <div class="fact"><b>176</b><span>executables answering <code>-help</code></span></div>
-    <div class="fact"><b>0</b><span>Bash shells needed to run</span></div>
-    <div class="fact"><b>86 MB</b><span>installer</span></div>
+    <div class="fact"><b>178</b><span>executables, import-checked</span></div>
+    <div class="fact"><b>3</b><span>solver paths: segregated, coupled, GPU</span></div>
+    <div class="fact"><b>20×</b><span>GPU vs <code>foamRun</code>, 2.1M cells</span></div>
     <div class="fact"><b>GPLv3</b><span>licence</span></div>
   </div>
 </div>
@@ -288,12 +324,12 @@ checkMesh
 cartesianMesh</pre>
       </div>
       <div class="panel" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
-        <div><h3>Solve</h3><p>Legacy solvers such as <code>icoFoam</code> and the modern <code>foamRun</code> framework. Serial by default, or local parallel with optional Microsoft MPI.</p></div>
-<pre>icoFoam
-<span class="d"># or the modular solver</span>
-foamRun
-<span class="d"># full smoke test, 4 processes</span>
-./of14-smoke-test.ps1 -Processes 4</pre>
+        <div><h3>Solve</h3><p>Legacy solvers such as <code>icoFoam</code>, the modern <code>foamRun</code> framework, the coupled <code>coupledSimpleFoam</code> and its GPU build. Serial by default, or local parallel with optional Microsoft MPI.</p></div>
+<pre>foamRun -solver incompressibleFluid
+<span class="d"># steady, p-U as one system</span>
+coupledSimpleFoam
+<span class="d"># the same on an NVIDIA GPU</span>
+coupledSimpleFoamAmgX</pre>
       </div>
       <div class="panel" id="p4" role="tabpanel" aria-labelledby="t4" hidden>
         <div><h3>View</h3><p>The smoke test writes <code>cavity.foam</code>. Open it in ParaView, or export with <code>foamToVTK</code> and post-process with <code>foamPostProcess</code>.</p></div>
@@ -305,13 +341,88 @@ foamRun
   </div>
 </section>
 
+<section class="s alt" id="solvers">
+  <div class="wrap">
+    <div class="rv"><span class="k">/ solvers</span><h2>Three ways to solve.</h2><p>All of OpenFOAM 14's solvers, plus a coupled steady solver that converges in tens of iterations instead of hundreds — on the CPU or on an NVIDIA GPU.</p></div>
+    <div class="cards rv">
+      <div class="card">
+        <span class="k">/ cpu · segregated</span>
+        <h3>OpenFOAM's own</h3>
+        <p>Every <code>foamRun</code> solver module (<code>incompressibleFluid</code>, <code>fluid</code>, <code>solid</code>, …), <code>foamMultiRun</code> for conjugate heat transfer, and the legacy solvers. Transient, buoyant, compressible: the full physics set. Serial, or in parallel over Microsoft MPI at WSL speed.</p>
+<pre>foamRun -solver fluid
+<span class="d"># 8 ranks over MS-MPI</span>
+Invoke-FoamWinParallel -Processes 8 `
+  -Application foamMultiRun</pre>
+      </div>
+      <div class="card">
+        <span class="k">/ cpu · coupled</span>
+        <h3>coupledSimpleFoam</h3>
+        <p>Steady incompressible flow with velocity and pressure solved as one system: 10–30 outer iterations on laminar cases, no relaxation factors to tune. Serial with Eigen, or parallel with PETSc and hypre when Microsoft MPI is installed. Passive heat transfer included.</p>
+<pre><span class="d"># same case folder as foamRun</span>
+coupledSimpleFoam
+<span class="d"># PETSc over MS-MPI</span>
+Invoke-FoamWinParallel -Processes 10 `
+  -Application coupledSimpleFoam</pre>
+      </div>
+      <div class="card hot">
+        <span class="k">/ gpu · coupled · new in win.7</span>
+        <h3>coupledSimpleFoamAmgX</h3>
+        <p>The coupled solver on one NVIDIA GPU through AmgX: the whole p-U system as one block matrix, the temperature too, and conjugate heat transfer with every solid in one system. Needs the CUDA Toolkit 12 and a Turing-to-Blackwell card.</p>
+<pre>coupledSimpleFoamAmgX
+<span class="d"># fluid + solids, one T system</span>
+coupledSimpleFoamAmgX -region fluid</pre>
+      </div>
+    </div>
+    <p class="note rv">Agent Skills for each path — what to set, how to run it, what goes wrong — are in the repository's <a class="lnk" href="https://github.com/dhanninacs/foamWin/tree/main/skills">skills folder</a>, for Claude Code and other agents that read <code>SKILL.md</code>.</p>
+  </div>
+</section>
+
+<section class="s" id="benchmarks">
+  <div class="wrap">
+    <div class="rv"><span class="k">/ benchmarks</span><h2>Measured, natively.</h2><p>Wall-clock time on Windows, from the release package, public cases only. Shorter is faster; every bar in a case is the same mesh and the same answer.</p></div>
+    <div class="bench rv">
+      <div class="case">
+        <h3>Square duct, isothermal <small>2.1M cells · laminar, Re 20</small></h3>
+        <div class="br gpu"><span class="who">GPU · coupled (AmgX)</span><div class="track"><div class="fill" style="width:4.97%"></div></div><span class="v">44.9 s</span></div>
+        <div class="br"><span class="who">CPU · coupled, 10 ranks</span><div class="track"><div class="fill" style="width:18.46%"></div></div><span class="v">166.9 s</span></div>
+        <div class="br seg"><span class="who">CPU · foamRun, 10 ranks</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">904.3 s</span></div>
+      </div>
+      <div class="case">
+        <h3>Square duct, heated <small>2.1M cells · walls at 350 K, Pr 0.7</small></h3>
+        <div class="br gpu"><span class="who">GPU · coupled (AmgX)</span><div class="track"><div class="fill" style="width:4.02%"></div></div><span class="v">68.8 s</span></div>
+        <div class="br"><span class="who">CPU · coupled, 10 ranks</span><div class="track"><div class="fill" style="width:14.37%"></div></div><span class="v">245.8 s</span></div>
+        <div class="br seg"><span class="who">CPU · foamRun fluid, 10 ranks</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">1710.9 s</span></div>
+      </div>
+      <div class="case">
+        <h3>Conjugate duct <small>0.88M fluid + 1.1M solid cells · heated solid shell</small></h3>
+        <div class="br gpu"><span class="who">GPU · conjugate (AmgX)</span><div class="track"><div class="fill" style="width:6.49%"></div></div><span class="v">30.8 s</span></div>
+        <div class="br seg"><span class="who">CPU · foamMultiRun, 10 ranks</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">474.8 s</span></div>
+      </div>
+    </div>
+    <div class="stats rv">
+      <div class="stat"><b>3.6×</b><span>GPU over the coupled CPU solver on 10 cores (isothermal duct)</span></div>
+      <div class="stat"><b>12 vs 810</b><span>outer iterations: coupled vs <code>foamRun</code>'s SIMPLE, same duct</span></div>
+      <div class="stat"><b>±7%</b><span>native CPU speed vs OpenFOAM on WSL: 3–4% faster on one core, 5–7% slower on 16 ranks</span></div>
+    </div>
+    <div class="tscroll rv">
+      <table class="btab" aria-label="Benchmark numbers">
+        <tr><th>Case</th><th>GPU</th><th>Coupled CPU</th><th>Segregated CPU</th><th>GPU speed-up</th><th>Iterations GPU / segregated</th></tr>
+        <tr><td>Duct, isothermal</td><td>44.9 s</td><td>166.9 s</td><td>904.3 s</td><td>3.7× · 20.1×</td><td>12 / 810</td></tr>
+        <tr><td>Duct, heated</td><td>68.8 s</td><td>245.8 s</td><td>1710.9 s</td><td>3.6× · 24.9×</td><td>12 / 1136</td></tr>
+        <tr><td>Conjugate duct</td><td>30.8 s</td><td>–</td><td>474.8 s</td><td>15.4×</td><td>11 / 713</td></tr>
+      </table>
+    </div>
+    <p class="note rv">NVIDIA RTX 4000 Ada (20 GB) and Intel i9-13900 (24 cores), Windows 11, each run alone; CPU runs on 10 Microsoft MPI ranks, the GPU on one process. A 1 × 1 × 8 square duct at 64 × 64 × 512 cells; the conjugate case puts it inside a solid shell with ten times the fluid's conductivity. The answers agree: the heated wall flux is 76.70728 on every coupled path, and the conjugate interface temperature is within 7×10<sup>-5</sup> K of <code>foamMultiRun</code>'s. Case generators and logs: coupledSimpleFoam's <a class="lnk" href="https://github.com/dhanninacs/coupledSimpleFoam/blob/feat/amgx-backend/doc/GPU-AMGX.md">GPU-AMGX.md</a>. One workstation, three cases: a guide to what to expect, not a promise for every case.</p>
+  </div>
+</section>
+
 <section class="s" id="ships">
   <div class="wrap s-grid">
     <div class="rv"><span class="k">/ downloads</span><h2>Everything but the viewer.</h2><p>Install ParaView separately; VTK export is built in.</p></div>
     <div class="rv">
       <table class="files">
-        <tr><td class="t">Installer</td><td class="n">OF14-win-setup.exe</td><td class="d">Guided install, Desktop and Start Menu shortcuts, optional MSYS2, uninstaller</td><td class="z">86 MB</td></tr>
-        <tr><td class="t">Portable</td><td class="n">OF14-win.zip</td><td class="d">Extract anywhere; includes a PowerShell installer script</td><td class="z">131 MB</td></tr>
+        <tr><td class="t">Installer</td><td class="n">OF14-win-setup.exe</td><td class="d">Guided install, Desktop and Start Menu shortcuts, optional MSYS2, uninstaller</td><td class="z">117 MB</td></tr>
+        <tr><td class="t">Portable</td><td class="n">OF14-win.zip</td><td class="d">Extract anywhere; includes a PowerShell installer script</td><td class="z">197 MB</td></tr>
         <tr><td class="t">Checksums</td><td class="n">SHA256SUMS.txt</td><td class="d">For both downloads</td><td class="z">164 B</td></tr>
       </table>
       <div class="two">
@@ -328,7 +439,9 @@ foamRun
     <div class="rv"><span class="k">/ evidence</span><h2>Tested where it actually runs.</h2><p>On Windows, from the installed package, through the Desktop shortcut — not on a Linux CI box.</p></div>
     <div class="rv">
       <ul class="chk">
-        <li><b>Startup</b><span>Every packaged executable answers <code>-help</code></span></li>
+        <li><b>Startup</b><span>Every packaged executable answers <code>-help</code>; DLL imports checked for the serial, MPI and GPU builds</span></li>
+        <li><b>Coupled</b><span><code>heatedDuct</code> matches the Linux build to every digit (Nu 7.5416 vs exact 7.5407), serially and on 4 PETSc ranks</span></li>
+        <li><b>GPU</b><span>Isothermal, heated and conjugate ducts from the release ZIP, same answers as the CPU paths</span></li>
         <li><b>Cavity</b><span>Legacy <code>icoFoam</code> case through 0.5 s, <code>Mesh OK</code></span></li>
         <li><b>Modern</b><span>incompressibleFluid cavity with <code>foamRun</code>, to time 10</span></li>
         <li><b>Decompose</b><span>Scotch and METIS, serial and parallel</span></li>
@@ -350,7 +463,8 @@ foamRun
       <li><b>64-bit Windows only</b><span>Double precision, 32-bit labels — the combination that was built and tested.</span></li>
       <li><b>No bundled viewer</b><span>Install ParaView and open <code>cavity.foam</code>. VTK export is built in.</span></li>
       <li><b>Runtime compilation needs setup</b><span>Function-object code compiled at run time wants an extra compiler configuration. Prebuilt libraries are unaffected.</span></li>
-      <li><b>Local parallel only</b><span>Multi-host runs and performance scaling under MS-MPI have not been measured.</span></li>
+      <li><b>Local parallel only</b><span>Multi-host runs under MS-MPI have not been measured.</span></li>
+      <li><b>One GPU, NVIDIA only</b><span>The GPU solver drives one card (compute capability 7.5 to 12.0) and needs the CUDA Toolkit 12. It is steady and incompressible, with temperature as a passive scalar.</span></li>
     </ul>
   </div>
 </section>
@@ -363,6 +477,7 @@ foamRun
       <div class="fields"><span>schema version</span><span>flavour</span><span>absolute tool paths</span><span>prepared environment</span><span>library names</span><span>MPI availability</span><span>normalised case directory</span></div>
       <p>Run it as an argument list, parse the JSON, use the paths. It exits with status 2 and a diagnostic if a required tool is missing, so a host adapter fails loudly instead of silently solving nothing.</p>
       <p><a class="lnk" href="https://github.com/dhanninacs/foamWin/blob/main/docs/NATIVE-ENGINE.md">Attachment guide ↗</a></p>
+      <p>Driving it from an AI agent instead? The <a class="lnk" href="https://github.com/dhanninacs/foamWin/tree/main/skills">FoamWin skills ↗</a> cover the CPU, coupled and GPU solvers.</p>
     </div>
   </div>
 </section>
