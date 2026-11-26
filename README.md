@@ -274,6 +274,13 @@ to Visual Studio's `Microsoft.VC143.CRT` redistributable folder, whose C++ runti
 shipped beside `amgxsh.dll`. `make-installer.sh` then needs `AMGX_WINDOWS_BUILD` too,
 for AmgX's license texts.
 
+## Agent skills
+
+[`skills/`](skills/) holds Agent Skills (`SKILL.md`) that teach an AI coding agent such as
+Claude Code to run FoamWin: the CPU solvers (`foamwin-cpu-solvers`), coupledSimpleFoam
+(`foamwin-coupled-solver`) and its GPU build (`foamwin-gpu-solver`). Copy the folders into
+`%USERPROFILE%\.claude\skills` to install them.
+
 ## Attaching a CFD application
 
 The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,

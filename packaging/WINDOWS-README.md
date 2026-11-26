@@ -113,6 +113,19 @@ build (Eigen backend) and needs no MPI. With Microsoft MPI installed, the shell 
 `linearSolver PETSc;` in `COUPLED`) and on one core. It is built from
 the open-source coupledSimpleFoam repository (GPL-3.0); see the source repository.
 
+### On an NVIDIA GPU
+
+`bin/amgx/coupledSimpleFoam.exe` is the same solver on one NVIDIA GPU, through
+NVIDIA AmgX (`amgxsh.dll`, BSD-3-Clause; licenses in `runtime-licenses/amgx`). Run it
+from the shell as `coupledSimpleFoamAmgX` (add `-region fluid` for a conjugate case)
+with `linearSolver AmgX;` in `COUPLED`. It needs a GPU of compute capability 7.5, 8.x,
+8.9 or 12.0 and the CUDA Toolkit 12, which the shell finds through `CUDA_PATH`.
+
+## Agent skills
+
+The source repository's `skills` folder has Agent Skills for AI coding agents: running
+the CPU solvers, the coupled solver and the GPU solver on FoamWin.
+
 ## Attaching a CFD application
 
 The native engine includes surfaceFeatures, foamPostProcess and foamToVTK,

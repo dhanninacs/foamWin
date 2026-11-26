@@ -4,6 +4,7 @@
 - `of14-shell.ps1` adds the `coupledSimpleFoamAmgX` command, which runs the GPU build with the CUDA Toolkit's `bin` (found through `CUDA_PATH`) on its PATH. The GPU build stays off the shell's PATH, so `coupledSimpleFoam` is still the CPU build. cuBLAS, cuSPARSE and cuSOLVER come from the user's CUDA Toolkit 12 and are not shipped.
 - AmgX is built for compute capabilities 7.5, 8.0, 8.6, 8.9 and 12.0 (Turing, Ampere, Ada, Blackwell workstation cards).
 - Add `scripts/build-amgx.ps1`, which builds AmgX's `amgxsh.dll` natively with Visual Studio 2022 and the CUDA Toolkit, and an AmgX stage in `scripts/build-coupled.sh` (`AMGX_WINDOWS_BUILD`, `AMGX_INCLUDE`, `MSVC_RUNTIME_DIR`). `make-installer.sh` ships AmgX's license and NOTICES in `runtime-licenses/amgx` and refuses a GPU build without them. The import check resolves `bin/amgx` on its own and treats the CUDA libraries as the toolkit's.
+- Add Agent Skills in `skills/` for running FoamWin from an AI coding agent: `foamwin-cpu-solvers` (shell, meshing, `foamRun`/`foamMultiRun`, Microsoft MPI), `foamwin-coupled-solver` (coupledSimpleFoam with Eigen or PETSc) and `foamwin-gpu-solver` (coupledSimpleFoamAmgX, including conjugate heat transfer). `docs/llms.txt` and the Windows README describe the coupled and GPU solvers.
 
 # v14.0.0-win.6 — Parallel coupled solver and native speed
 

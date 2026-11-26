@@ -24,21 +24,46 @@ cross toolchain. Running the result does not require Linux, MSYS2, WSL or Bash.
 
 ## Current release
 
-v14.0.0-win.5 — 31 October 2026. Adds Scotch/METIS partitioners for decomposePar,
-PT-Scotch and Zoltan for parallel redistribution under Microsoft MPI, and cfMesh
-(cartesianMesh, tetMesh, pMesh, cartesian2DMesh, generateBoundaryLayers,
-improveMeshQuality) with OpenMP support.
+v14.0.0-win.7 — 27 November 2026. Adds coupledSimpleFoam on an NVIDIA GPU
+(`bin/amgx`, NVIDIA AmgX 2.5.0), run from the shell as `coupledSimpleFoamAmgX`:
+steady incompressible flow, passive heat transfer and conjugate heat transfer
+(fluid and solids in one temperature system), 3–4x the coupled CPU solver on 10
+cores and 14–25x OpenFOAM's segregated solvers on public 2.1M-cell cases. Needs
+the CUDA Toolkit 12.
+
+Earlier: win.6 shipped coupledSimpleFoam on the CPU (serial Eigen; PETSc over
+Microsoft MPI in `bin/msmpi`) and native speed on par with WSL; win.5 the Scotch,
+METIS, PT-Scotch and Zoltan partitioners and cfMesh.
 
 Distribution files retain their tested OpenFOAM package names:
 
-- OF14-win-setup.exe — guided installer with shortcuts and uninstaller (86 MB)
-- OF14-win.zip — portable distribution with a PowerShell install option (131 MB)
+- OF14-win-setup.exe — guided installer with shortcuts and uninstaller (117 MB)
+- OF14-win.zip — portable distribution with a PowerShell install option (197 MB)
 - SHA256SUMS.txt — checksums for both
+
+## Solvers
+
+- CPU, segregated: `foamRun -solver incompressibleFluid | fluid | solid`,
+  `foamMultiRun` for multi-region cases, and the legacy solvers (icoFoam, ...).
+- CPU, coupled: `coupledSimpleFoam` (steady incompressible, p-U as one system,
+  10–30 outer iterations on laminar cases), serial or in parallel with PETSc.
+- GPU: `coupledSimpleFoamAmgX` (the same solver on one NVIDIA GPU), including
+  conjugate heat transfer with `-region fluid`.
+
+## Agent skills
+
+Agent Skills (SKILL.md) for running FoamWin from an AI coding agent:
+
+- CPU solvers: https://github.com/dhanninacs/foamWin/blob/main/skills/foamwin-cpu-solvers/SKILL.md
+- Coupled solver: https://github.com/dhanninacs/foamWin/blob/main/skills/foamwin-coupled-solver/SKILL.md
+- GPU solver: https://github.com/dhanninacs/foamWin/blob/main/skills/foamwin-gpu-solver/SKILL.md
 
 ## Requirements and limits
 
 - 64-bit Windows, double precision, 32-bit labels.
 - Microsoft MPI is optional: serial works without it, local parallel requires it.
+- The GPU solver needs an NVIDIA GPU (compute capability 7.5, 8.x, 8.9 or 12.0)
+  and the CUDA Toolkit 12; one process drives one GPU.
 - ParaView is not bundled; open the generated `cavity.foam` in a separate install.
 - Runtime code compilation needs additional compiler configuration.
 - Docker/multi-host MPI operation and performance scaling are not validated.
