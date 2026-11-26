@@ -101,6 +101,17 @@ if [ -f "$BIN/msmpi/coupledSimpleFoam.exe" ]; then
         "$STAGE/runtime-licenses/hypre/"
     cp "$LAPACK_LICENSE_FILE" "$STAGE/runtime-licenses/blas-lapack/"
 fi
+# The GPU build in bin/amgx ships NVIDIA AmgX (BSD-3-Clause, with the CUSP
+# library under Apache-2.0 in its NOTICES) as amgxsh.dll.
+if [ -f "$BIN/amgx/coupledSimpleFoam.exe" ]; then
+    : "${AMGX_WINDOWS_BUILD:?Set AMGX_WINDOWS_BUILD to the AmgX build shipped in bin/amgx}"
+    test -f "$AMGX_WINDOWS_BUILD/BSD-3-Clause.txt"
+    test -f "$AMGX_WINDOWS_BUILD/NOTICES"
+    cmp -s "$AMGX_WINDOWS_BUILD/amgxsh.dll" "$BIN/amgx/amgxsh.dll" \
+        || { echo "bin/amgx/amgxsh.dll is not the one in AMGX_WINDOWS_BUILD" >&2; exit 1; }
+    mkdir -p "$STAGE/runtime-licenses/amgx"
+    cp "$AMGX_WINDOWS_BUILD/BSD-3-Clause.txt" "$AMGX_WINDOWS_BUILD/NOTICES" "$STAGE/runtime-licenses/amgx/"
+fi
 cp -a "$STAGE/runtime-licenses" "$STAGE/OpenFOAM-14/"
 python3 "$REPO/scripts/verify-windows-imports.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS"
 python3 "$REPO/scripts/stage-gmsh.py" "$STAGE" --cache "${FOAMWIN_DOWNLOAD_CACHE:-$OUT/download-cache}"

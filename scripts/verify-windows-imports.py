@@ -31,8 +31,12 @@ class PE:
 # bin/msmpi (MS-MPI only), bin, lib, lib/<backend>, then lib/dummy. A later
 # same-named file is shadowed.
 system_dlls = {'kernel32.dll','msvcrt.dll','advapi32.dll','user32.dll','imagehlp.dll','gdi32.dll','msmpi.dll'}
+# bin/amgx (coupledSimpleFoam's NVIDIA GPU build) is resolved on its own: bin/amgx,
+# then the serial PATH. AmgX imports cuBLAS, cuSPARSE and cuSOLVER, which come from
+# the user's CUDA Toolkit 12, not from FoamWin.
+cuda_dlls = {'cublas64_12.dll','cusparse64_12.dll','cusolver64_11.dll'}
 all_files = list(root.rglob('*.dll')) + list(root.rglob('*.exe'))
-backend_dirs = {root/'lib'/name for name in ('dummy','msmpi')} | {root/'bin'/'msmpi'}
+backend_dirs = {root/'lib'/name for name in ('dummy','msmpi')} | {root/'bin'/'msmpi', root/'bin'/'amgx'}
 backends = [name for name in ('dummy','msmpi') if (root/'lib'/name/'libPstream.dll').is_file()]
 errors = []
 seen = {}
@@ -40,25 +44,31 @@ for p in all_files:
  key = (p.parent, p.name.lower())
  if key in seen: errors.append(f'Windows filename collision: {seen[key]} and {p}')
  seen[key] = p
+checks = []
 for backend in backends:
- order = ([root/'bin'/'msmpi'] if backend == 'msmpi' else []) + [root/'bin', root/'lib', root/'lib'/backend] + ([root/'lib'/'dummy'] if backend != 'dummy' else [])
+ checks.append((backend, ([root/'bin'/'msmpi'] if backend == 'msmpi' else []) + [root/'bin', root/'lib', root/'lib'/backend] + ([root/'lib'/'dummy'] if backend != 'dummy' else []), set()))
+if (root/'bin'/'amgx'/'coupledSimpleFoam.exe').is_file() and 'dummy' in backends:
+ checks.append(('amgx', [root/'bin'/'amgx', root/'bin', root/'lib', root/'lib'/'dummy'], cuda_dlls))
+for backend, order, external in checks:
+ before = len(errors)
  rank = lambda p: order.index(p.parent) if p.parent in order else len(order)
  index = {}
  for p in sorted((p for p in all_files if p.parent not in backend_dirs or p.parent in order), key=rank):
   index.setdefault(p.name.lower(), p)
- files = list(index.values())
+ # The GPU check covers bin/amgx itself; the rest is the serial backend's check.
+ files = [p for p in index.values() if backend != 'amgx' or p.parent == root/'bin'/'amgx']
  cache = {}
  for p in files:
   for dll,names in PE(p).imports():
    key = dll.lower()
-   if key in system_dlls or key.startswith(('api-ms-', 'ext-ms-')): continue
+   if key in system_dlls or key in external or key.startswith(('api-ms-', 'ext-ms-')): continue
    if key not in index:
     errors.append(f'{backend}: {p.name}: missing {dll}')
     continue
    if key not in cache: cache[key] = PE(index[key]).exports()
    missing = set(names) - cache[key]
    if missing: errors.append(f'{backend}: {p.name} -> {dll}: missing exports {sorted(missing)}')
- if not errors: print(f'Import validation passed ({backend} backend): {sum(p.suffix == ".exe" for p in files)} executables')
+ if len(errors) == before: print(f'Import validation passed ({backend} backend): {sum(p.suffix == ".exe" for p in files)} executables')
 if not backends: errors.append('No Pstream backend is packaged')
 if errors:
  print('\n'.join(errors),file=sys.stderr)

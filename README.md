@@ -14,8 +14,10 @@ validation details, limitations and the application attachment guide.
 
 ## Download and install
 
-The latest release is **v14.0.0-win.6**: coupledSimpleFoam in serial and, with
-Microsoft MPI, in parallel through PETSc, and native runs as fast as OpenFOAM on WSL.
+The latest release is **v14.0.0-win.7**: coupledSimpleFoam on an NVIDIA GPU (AmgX),
+for flow, heat transfer and conjugate heat transfer, 3–4× faster than the coupled
+solver on 10 CPU cores and 14–23× faster than OpenFOAM's own solvers on the cases
+measured.
 Earlier releases remain available on the releases page.
 Its distribution files retain the tested OpenFOAM package names:
 
@@ -229,6 +231,48 @@ with `COUPLED_SOURCE` set to a clone of the repository, `EIGEN_INCLUDE` set to t
 Eigen 3 headers (Ubuntu: `/usr/include/eigen3`), and the `PETSC_DIR`, `PETSC_ARCH`
 and `MSMPI_ROOT` that `build-petsc.sh` prints. Without `PETSC_DIR` only the serial
 build is made.
+
+### On an NVIDIA GPU
+
+`bin/amgx/coupledSimpleFoam.exe` is coupledSimpleFoam's GPU build, from its
+`feat/amgx-backend` branch at commit `173f8bc`. It solves the coupled
+pressure-velocity system as one 4×4 block matrix with NVIDIA
+[AmgX](https://github.com/NVIDIA/AMGX) 2.5.0 (BSD-3-Clause), and the temperature and
+other scalar equations with AmgX too. Its conjugate mode solves the temperature of the
+fluid and of every solid as one system. Start it from the FoamWin shell as
+`coupledSimpleFoamAmgX`, which adds the CUDA libraries to its PATH:
+
+```powershell
+coupledSimpleFoamAmgX                 # a case with COUPLED { linearSolver AmgX; ... }
+coupledSimpleFoamAmgX -region fluid   # conjugate: COUPLED { solidRegions (solid); rhoCp ...; }
+```
+
+It needs an NVIDIA GPU of compute capability 7.5, 8.x, 8.9 or 12.0 (Turing,
+Ampere, Ada and Blackwell workstation cards), a current NVIDIA driver, and the
+[CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads), whose cuBLAS,
+cuSPARSE and cuSOLVER it loads. Those are not shipped: the shell finds them through
+`CUDA_PATH`. One process drives one GPU. The case settings are in coupledSimpleFoam's
+`doc/GPU-AMGX.md`.
+
+Measured on an RTX 4000 Ada (20 GB) and an i9-13900, natively on Windows, public
+cases at 2.1M cells; the coupled CPU solver ran on 10 MS-MPI ranks:
+
+| Case | GPU | Coupled, CPU | × | OpenFOAM's solver, CPU | × |
+|---|---:|---:|---:|---:|---:|
+| Square duct, isothermal | 45.8 s | 166.9 s | 3.6 | 904.3 s (`foamRun incompressibleFluid`) | 19.7 |
+| Square duct, heated | 73.3 s | 245.8 s | 3.4 | 1710.9 s (`foamRun fluid`) | 23.3 |
+| Conjugate duct (0.88M fluid, 1.1M solid cells) | 33.7 s | – | – | 474.8 s (`foamMultiRun`) | 14.1 |
+
+The answers agree: the heated wall flux is 76.70728 on every coupled path, and the
+conjugate interface temperature is within 7e-5 K of `foamMultiRun`'s.
+
+To build it, run `scripts\build-amgx.ps1` on Windows (Visual Studio 2022 Build Tools,
+CMake and the CUDA Toolkit 12; `-Source` is the unpacked AmgX v2.5.0 source). Then run
+`scripts/build-coupled.sh` with `AMGX_WINDOWS_BUILD` set to that build's `Release`
+folder, `AMGX_INCLUDE` to the AmgX source's `include` folder, and `MSVC_RUNTIME_DIR`
+to Visual Studio's `Microsoft.VC143.CRT` redistributable folder, whose C++ runtime is
+shipped beside `amgxsh.dll`. `make-installer.sh` then needs `AMGX_WINDOWS_BUILD` too,
+for AmgX's license texts.
 
 ## Attaching a CFD application
 

@@ -86,6 +86,29 @@ $gmshDirectory = Join-Path $PSScriptRoot 'gmsh'
 if (Test-Path -LiteralPath (Join-Path $gmshDirectory 'gmsh.exe')) {
     $env:PATH = "$gmshDirectory;$env:PATH"
 }
+# coupledSimpleFoam's NVIDIA GPU build (AmgX) is bin/amgx/coupledSimpleFoam.exe. It is not put on
+# PATH, where it would shadow the CPU build: run it as coupledSimpleFoamAmgX. AmgX needs cuBLAS,
+# cuSPARSE and cuSOLVER from the CUDA Toolkit 12, found through CUDA_PATH (the toolkit's folder or
+# its bin, whichever holds cublas64_12.dll).
+function global:Get-FoamWinCudaBin {
+    foreach ($candidate in @("$env:CUDA_PATH/bin", $env:CUDA_PATH)) {
+        if ($env:CUDA_PATH -and (Test-Path -LiteralPath (Join-Path $candidate 'cublas64_12.dll'))) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+    }
+    return $null
+}
+function global:coupledSimpleFoamAmgX {
+    $gpuBin = "$env:FOAM_APPBIN/amgx"
+    if (-not (Test-Path -LiteralPath "$gpuBin/coupledSimpleFoam.exe")) { throw 'This FoamWin has no GPU build (bin/amgx).' }
+    $cudaBin = Get-FoamWinCudaBin
+    if (-not $cudaBin) { throw 'The GPU solver needs the NVIDIA CUDA Toolkit 12 (cuBLAS, cuSPARSE, cuSOLVER); install it and reopen the shell.' }
+    $saved = $env:PATH
+    try {
+        $env:PATH = "$gpuBin;$cudaBin;$saved"
+        & "$gpuBin/coupledSimpleFoam.exe" @args
+    } finally { $env:PATH = $saved }
+}
 function global:Invoke-FoamWinParallel {
     param(
         [Parameter(Mandatory=$true)][ValidateRange(2,256)][int]$Processes,
