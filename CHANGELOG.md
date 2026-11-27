@@ -1,4 +1,4 @@
-# v14.0.0-win.8 (unreleased) — conjugate heat transfer on the CPU, GPU start-up
+# v14.0.0-win.8 — GPU over Remote Desktop, conjugate heat transfer on the CPU
 
 - The CPU coupled solver's `linearSolver BiCGSTAB` (Eigen) is about 10x faster on large cases: its preconditioner is kept between outer iterations (`pcReuseInterval`), it follows `adaptiveTolerance`, its matrix-vector products use all OpenMP threads, and the IncompleteLUT defaults are lighter (`fillFactor 5`, `dropTolerance 1e-4`). An 80k-cell conjugate case went from about 15 min to 82 s with the same answer.
 - coupledSimpleFoam's convergence test no longer stalls on a velocity component that carries next to none of the flow (the cross-stream velocity of a periodic or symmetric case): its residual stayed O(1) on round-off, so `residualControl` never fired. `COUPLED/residualFloor` (default 1e-3) floors each component's normalisation; the solution itself is unchanged.

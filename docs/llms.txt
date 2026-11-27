@@ -24,7 +24,13 @@ cross toolchain. Running the result does not require Linux, MSYS2, WSL or Bash.
 
 ## Current release
 
-v14.0.0-win.7 — 27 November 2026. Adds coupledSimpleFoam on an NVIDIA GPU
+v14.0.0-win.8 — 27 November 2026. Every executable is Terminal-Server aware, so the
+GPU solver runs on Windows Server over Remote Desktop. Conjugate heat transfer runs on
+the CPU builds too (`coupledSimpleFoam -region fluid`, `conjugateSolver Eigen`), cyclic
+patches are coupled in the conjugate temperature, and the CPU coupled solver's BiCGSTAB
+backend is about 10x faster.
+
+v14.0.0-win.7 — 27 November 2026. Added coupledSimpleFoam on an NVIDIA GPU
 (`bin/amgx`, NVIDIA AmgX 2.5.0), run from the shell as `coupledSimpleFoamAmgX`:
 steady incompressible flow, passive heat transfer and conjugate heat transfer
 (fluid and solids in one temperature system), 3–4x the coupled CPU solver on 10

@@ -14,10 +14,12 @@ validation details, limitations and the application attachment guide.
 
 ## Download and install
 
-The latest release is **v14.0.0-win.7**: coupledSimpleFoam on an NVIDIA GPU (AmgX),
-for flow, heat transfer and conjugate heat transfer, 3–4× faster than the coupled
-solver on 10 CPU cores and 14–23× faster than OpenFOAM's own solvers on the cases
-measured.
+The latest release is **v14.0.0-win.8**:
+- the GPU solver runs on Windows Server over Remote Desktop, as every executable is now Terminal-Server aware;
+- conjugate heat transfer runs on the CPU builds too, including periodic (cyclic) cells;
+- the CPU coupled solver's BiCGSTAB backend is about 10× faster.
+
+win.7 added coupledSimpleFoam on an NVIDIA GPU (AmgX) for flow, heat transfer and conjugate heat transfer. On the cases measured it is 3–4× faster than the coupled solver on 10 CPU cores and 14–23× faster than OpenFOAM's own solvers.
 Earlier releases remain available on the releases page.
 Its distribution files retain the tested OpenFOAM package names:
 

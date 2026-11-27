@@ -243,7 +243,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
 <section class="hero">
   <div class="wrap">
     <div>
-      <p class="tag"><b>v14.0.0-win.7</b> · community port of Foundation OpenFOAM 14</p>
+      <p class="tag"><b>v14.0.0-win.8</b> · community port of Foundation OpenFOAM 14</p>
       <h1>OpenFOAM, <u>native</u> on Windows.</h1>
       <p class="lede">Real <code>.exe</code> and <code>.dll</code> files, a PowerShell launcher and an installer. No MSYS2, no WSL, no Linux at runtime. Now with a coupled solver that runs on an NVIDIA GPU — <a class="lnk" href="#benchmarks">15–25× faster</a> than OpenFOAM's own solvers on the cases measured.</p>
       <div class="cta">
@@ -357,7 +357,7 @@ Invoke-FoamWinParallel -Processes 8 `
       <div class="card">
         <span class="k">/ cpu · coupled</span>
         <h3>coupledSimpleFoam</h3>
-        <p>Steady incompressible flow with velocity and pressure solved as one system: 10–30 outer iterations on laminar cases, no relaxation factors to tune. Serial with Eigen, or parallel with PETSc and hypre when Microsoft MPI is installed. Passive heat transfer included.</p>
+        <p>Steady incompressible flow with velocity and pressure solved as one system: 10–30 outer iterations on laminar cases, no relaxation factors to tune. Serial with Eigen, or parallel with PETSc and hypre when Microsoft MPI is installed. Passive heat transfer and, serially, conjugate heat transfer (<code>-region fluid</code>) included.</p>
 <pre><span class="d"># same case folder as foamRun</span>
 coupledSimpleFoam
 <span class="d"># PETSc over MS-MPI</span>
@@ -365,7 +365,7 @@ Invoke-FoamWinParallel -Processes 10 `
   -Application coupledSimpleFoam</pre>
       </div>
       <div class="card hot">
-        <span class="k">/ gpu · coupled · new in win.7</span>
+        <span class="k">/ gpu · coupled · since win.7</span>
         <h3>coupledSimpleFoamAmgX</h3>
         <p>The coupled solver on one NVIDIA GPU through AmgX: the whole p-U system as one block matrix, the temperature too, and conjugate heat transfer with every solid in one system. Needs the CUDA Toolkit 12 and a Turing-to-Blackwell card.</p>
 <pre>coupledSimpleFoamAmgX
@@ -441,7 +441,8 @@ coupledSimpleFoamAmgX -region fluid</pre>
       <ul class="chk">
         <li><b>Startup</b><span>Every packaged executable answers <code>-help</code>; DLL imports checked for the serial, MPI and GPU builds</span></li>
         <li><b>Coupled</b><span><code>heatedDuct</code> matches the Linux build to every digit (Nu 7.5416 vs exact 7.5407), serially and on 4 PETSc ranks</span></li>
-        <li><b>GPU</b><span>Isothermal, heated and conjugate ducts from the release ZIP, same answers as the CPU paths</span></li>
+        <li><b>GPU</b><span>Isothermal, heated and conjugate ducts from the release ZIP, same answers as the CPU paths; runs on Windows Server over Remote Desktop</span></li>
+        <li><b>Conjugate</b><span>Fluid and solids in one temperature system on the GPU or the CPU, periodic sides included; matches <code>foamMultiRun</code></span></li>
         <li><b>Cavity</b><span>Legacy <code>icoFoam</code> case through 0.5 s, <code>Mesh OK</code></span></li>
         <li><b>Modern</b><span>incompressibleFluid cavity with <code>foamRun</code>, to time 10</span></li>
         <li><b>Decompose</b><span>Scotch and METIS, serial and parallel</span></li>
