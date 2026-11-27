@@ -92,6 +92,14 @@ plus `0/T` (fixedValue / zeroGradient / fixedGradient walls, `inletOutlet` outle
 (no buoyancy, constant properties). The log prints an energy balance
 (`coupled energy check: wall heat flux = ...`) — the imbalance should be ~1e-6 %.
 
+## Conjugate heat transfer on the CPU (win.8+)
+
+The CPU builds run the conjugate mode the GPU skill describes (`foamwin-gpu-solver`): a
+`splitMeshRegions` case, `COUPLED { solveEnergy yes; solidRegions (solid); rhoCp ...;
+conjugateSolver Eigen; }` in `system/fluid/fvSolution`, run as `coupledSimpleFoam -region fluid`.
+It is serial: one process, whichever build (`linearSolver SparseLU`, `BiCGSTAB`, or `PETSc` on one
+rank). In win.7 only the GPU build (`bin/amgx`) had `-region`.
+
 ## Reading the log and fixing stalls
 
 - Each outer iteration prints the coupled residuals for Ux, Uy, Uz, p and the linear iterations;

@@ -1,3 +1,10 @@
+# v14.0.0-win.8 (unreleased) — conjugate heat transfer on the CPU, GPU start-up
+
+- All three coupledSimpleFoam builds (`bin`, `bin/msmpi`, `bin/amgx`) are built from one commit, coupledSimpleFoam `feat/amgx-backend` at `5585c2a`, so the CPU builds take `-region` and run conjugate cases with `conjugateSolver Eigen` without CUDA (#2). Conjugate cases run serially; the coupled p-U system can still use PETSc on one rank.
+- Fix a crash in the first conjugate energy solve with `conjugateSolver Eigen`: the matrix given to Eigen's BiCGSTAB was a temporary that was freed before the solve (#2).
+- The GPU build starts CUDA (through AmgX) first thing in `main`, before OpenFOAM's start-up, instead of at the first linear solve; `COUPLED_AMGX_LAZY=1` restores the old order. A candidate fix for the `cuInit` crash on Windows Server 2025 with driver 582.16 (#1), still to be confirmed on that host.
+- `build-coupled.sh` replaces Visual Studio's read-only C++ runtime files in `bin/amgx` on a rebuild instead of failing.
+
 # v14.0.0-win.7 — coupledSimpleFoam on an NVIDIA GPU
 
 - Ship coupledSimpleFoam's GPU build as `bin/amgx/coupledSimpleFoam.exe`, from its `feat/amgx-backend` branch at `173f8bc`, beside NVIDIA AmgX 2.5.0 (`amgxsh.dll`, BSD-3-Clause) and MSVC's C++ runtime. It solves the coupled pressure-velocity system as one 4×4 block matrix with AmgX's aggregation AMG (`COUPLED { linearSolver AmgX; }`), any scalar equation with `solver AmgX;`, and, in its conjugate mode (`COUPLED { solidRegions (...); rhoCp ...; }`, run with `-region <fluid>`), the temperature of the fluid and every solid as one system. Natively on an RTX 4000 Ada against an i9-13900, public 2.1M-cell cases: an isothermal square duct in 45.8 s against 166.9 s for the coupled CPU solver on 10 MS-MPI ranks (3.6×) and 904.3 s for `foamRun incompressibleFluid` (19.7×); a heated duct in 73.3 s against 245.8 s (3.4×) and 1710.9 s for `foamRun fluid` (23.3×); a conjugate duct in 33.7 s against 474.8 s for `foamMultiRun` (14.1×), with the same answers.

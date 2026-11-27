@@ -109,6 +109,7 @@ radiation, volumetric sources and temperature-dependent properties are not suppo
 | --- | --- |
 | `The GPU solver needs the NVIDIA CUDA Toolkit 12` | Install CUDA 12, reopen the shell; check `CUDA_PATH`. |
 | Exit `0xC0000135` | Started without the CUDA `bin` / `bin\amgx` on PATH: use `coupledSimpleFoamAmgX`. |
+| Segfault in `nvcuda64.dll` / `nvdxgdmal64.dll` under `cuInit` (win.7, Windows Server 2025, driver 582.16) | Under investigation (FoamWin #1). win.8 starts CUDA before OpenFOAM's start-up; `COUPLED_AMGX_LAZY=1` restores the win.7 order for comparison. On the CPU, run the conjugate case with the CPU build (`coupledSimpleFoam -region fluid`, `conjugateSolver Eigen`). |
 | `AMGX ERROR` about the device / no kernel image | GPU architecture not in 7.5/8.x/8.9/12.0, or driver too old. |
 | Out of memory | Mesh too big for the card; use the CPU PETSc build in parallel. |
 | Krylov stalls then floating-point exception | `amgxReuse none` set: use `resetup`. |

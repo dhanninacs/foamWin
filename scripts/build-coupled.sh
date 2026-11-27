@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Cross-build coupledSimpleFoam into the MinGW OpenFOAM tree, after build-all.sh.
 # COUPLED_SOURCE is a clone of https://github.com/dhanninacs/coupledSimpleFoam
-# at the commit below; this script copies it to COUPLED_BUILD_ROOT and installs
+# holding the commit below (its feat/amgx-backend branch: the conjugate mode,
+# -region and the AmgX backend); every build is made from that one commit, so
+# the CPU builds run conjugate cases (conjugateSolver Eigen) without a GPU. It
+# copies the source to COUPLED_BUILD_ROOT and installs
 # its builds:
 #   FOAM_APPBIN/coupledSimpleFoam.exe        serial, Eigen backend only
 #                                            (COUPLED_NO_PETSC=1); needs no MPI
@@ -24,7 +27,7 @@ set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 SOURCE=${OF14_SOURCE:-$REPO/OpenFOAM-14}
 JOBS=${FOAM_BUILD_JOBS:-2}
-COUPLED_COMMIT=c2ca076434f5a43ec616a3e278589b565f4d6aa6
+COUPLED_COMMIT=5585c2ac31e65ceeae1485d23e30c1abf4d9a4f4
 EIGEN_INCLUDE=${EIGEN_INCLUDE:-/usr/include/eigen3}
 : "${COUPLED_SOURCE:?Set COUPLED_SOURCE to a coupledSimpleFoam clone}"
 : "${COUPLED_BUILD_ROOT:?Set COUPLED_BUILD_ROOT to a new directory}"
@@ -62,14 +65,14 @@ test -f "$FOAM_APPBIN/coupledSimpleFoam.exe"
 # Built when AMGX_WINDOWS_BUILD is set: scripts/build-amgx.ps1's Release folder
 # (amgxsh.dll, amgxsh.lib, AmgX's license and NOTICES). AmgX is MSVC + CUDA; the
 # solver calls only its C API, so MinGW links the MSVC import library. The GPU
-# solver is coupledSimpleFoam's feat/amgx-backend at COUPLED_AMGX_COMMIT
+# solver is coupledSimpleFoam's GPU build
 # (linearSolver AmgX, scalar equations with `solver AmgX;`, conjugate heat
-# transfer with COUPLED/solidRegions). It installs as bin/amgx/coupledSimpleFoam.exe
+# transfer with COUPLED/solidRegions), built from the same COUPLED_COMMIT; it starts
+# CUDA first thing in main (FoamWin issue #1). It installs as bin/amgx/coupledSimpleFoam.exe
 # beside amgxsh.dll and MSVC's C++ runtime (MSVC_RUNTIME_DIR: the folder with
 # msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll, Visual Studio's
 # redistributable Microsoft.VC143.CRT). cuBLAS, cuSPARSE and cuSOLVER are not
 # shipped: they come from the user's CUDA Toolkit 12 (of14-shell.ps1 finds them).
-COUPLED_AMGX_COMMIT=173f8bce745618f4fa4f2058529e6a976c0fd178
 if [ -n "${AMGX_WINDOWS_BUILD:-}" ]; then
     : "${AMGX_INCLUDE:?Set AMGX_INCLUDE to the AmgX 2.5.0 source include folder (amgx_c.h)}"
     : "${MSVC_RUNTIME_DIR:?Set MSVC_RUNTIME_DIR to Microsoft.VC143.CRT (msvcp140.dll)}"
@@ -80,10 +83,9 @@ if [ -n "${AMGX_WINDOWS_BUILD:-}" ]; then
     for f in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
         test -f "$MSVC_RUNTIME_DIR/$f" || { echo "Missing $MSVC_RUNTIME_DIR/$f" >&2; exit 1; }
     done
-    git -C "$COUPLED_SOURCE" cat-file -e "$COUPLED_AMGX_COMMIT^{commit}"
     GPU_ROOT="$COUPLED_BUILD_ROOT/amgx"
     git clone -q --no-checkout "$COUPLED_SOURCE" "$GPU_ROOT/src"
-    git -C "$GPU_ROOT/src" checkout -q "$COUPLED_AMGX_COMMIT"
+    git -C "$GPU_ROOT/src" checkout -q "$COUPLED_COMMIT"
     # The prefix the solver's Make/options reads: include/amgx_c.h, lib/amgxsh.lib.
     mkdir -p "$GPU_ROOT/prefix/include" "$GPU_ROOT/prefix/lib"
     cp "$AMGX_INCLUDE"/*.h "$GPU_ROOT/prefix/include/"
@@ -96,7 +98,13 @@ if [ -n "${AMGX_WINDOWS_BUILD:-}" ]; then
     )
     test -f "$FOAM_APPBIN/amgx/coupledSimpleFoam.exe"
     cp "$AMGX_WINDOWS_BUILD/amgxsh.dll" "$FOAM_APPBIN/amgx/"
-    cp "$MSVC_RUNTIME_DIR"/{msvcp140.dll,vcruntime140.dll,vcruntime140_1.dll} "$FOAM_APPBIN/amgx/"
+    # Visual Studio installs these read-only: make them writable, so a rebuild can replace them.
+    for f in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+        chmod u+w "$FOAM_APPBIN/amgx/$f" 2> /dev/null || true
+        rm -f "$FOAM_APPBIN/amgx/$f"
+        cp "$MSVC_RUNTIME_DIR/$f" "$FOAM_APPBIN/amgx/"
+        chmod u+w "$FOAM_APPBIN/amgx/$f"
+    done
     x86_64-w64-mingw32-objdump -p "$FOAM_APPBIN/amgx/coupledSimpleFoam.exe" \
         | grep 'DLL Name: amgxsh.dll' > /dev/null
 fi
