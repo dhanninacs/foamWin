@@ -26,4 +26,4 @@ LINK_LIBS   = $(c++DBUG) -lfiniteVolume -lmeshTools -lsurfMesh -ltriSurface -lfi
 # Tried using -Wl,-no-undefined,--enable-runtime-pseudo-reloc
 # but didn't forgive undefined symbols during linking
 LINKLIBSO   = $(CC) $(c++FLAGS) -Wl,--output-def,$(LIB).def -Wl,--out-implib,$(LIB).a -Wl,--enable-auto-import -shared
-LINKEXE     = $(CC) $(c++FLAGS) -Wl,--enable-auto-import,--force-exe-suffix
+LINKEXE     = $(CC) $(c++FLAGS) -Wl,--enable-auto-import,--force-exe-suffix,--tsaware

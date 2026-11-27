@@ -113,6 +113,10 @@ if [ -f "$BIN/amgx/coupledSimpleFoam.exe" ]; then
     cp "$AMGX_WINDOWS_BUILD/BSD-3-Clause.txt" "$AMGX_WINDOWS_BUILD/NOTICES" "$STAGE/runtime-licenses/amgx/"
 fi
 cp -a "$STAGE/runtime-licenses" "$STAGE/OpenFOAM-14/"
+# Every executable must be Terminal-Server aware: without the flag NVIDIA's driver faults in
+# cuInit under Remote Desktop on Windows Server (#1). The wmake rules link with --tsaware; this
+# also marks executables linked before that rule.
+python3 "$REPO/scripts/set-tsaware.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS/bin"
 python3 "$REPO/scripts/verify-windows-imports.py" "$STAGE/OpenFOAM-14/platforms/$OPTIONS"
 python3 "$REPO/scripts/stage-gmsh.py" "$STAGE" --cache "${FOAMWIN_DOWNLOAD_CACHE:-$OUT/download-cache}"
 (cd "$STAGE" && makensis -V2 OF14-installer.nsi)

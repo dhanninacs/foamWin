@@ -41,6 +41,8 @@ backends = [name for name in ('dummy','msmpi') if (root/'lib'/name/'libPstream.d
 errors = []
 seen = {}
 for p in all_files:
+ if p.suffix.lower() == '.exe' and not struct.unpack_from('<H', PE(p).b, struct.unpack_from('<I', PE(p).b, 60)[0] + 94)[0] & 0x8000:
+  errors.append(f'{p.name}: not Terminal-Server aware (scripts/set-tsaware.py)')
  key = (p.parent, p.name.lower())
  if key in seen: errors.append(f'Windows filename collision: {seen[key]} and {p}')
  seen[key] = p
