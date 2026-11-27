@@ -104,6 +104,7 @@ rank). In win.7 only the GPU build (`bin/amgx`) had `-region`.
 
 - Each outer iteration prints the coupled residuals for Ux, Uy, Uz, p and the linear iterations;
   the end prints `COUPLED solution converged in N iterations` or `did NOT converge`.
+- A velocity component stuck near 1 (or 1e-2) while the others reach 1e-10: that component carries no flow (periodic or symmetric direction). win.8 floors its normalisation (`residualFloor 1e-3` in `COUPLED`); on win.7 judge convergence by the other components and the monitors.
 - Stalls at a plateau: tighten the inner tolerance (`relTolMin 1e-10`) or turn on
   `pseudoTransient` with a lower `pseudoCo` (20-50).
 - PETSc diverges on a poor mesh: lower `pseudoCo`, check `checkMesh` non-orthogonality.
