@@ -1,3 +1,13 @@
+# v14.0.0-win.9 — AmgX for any solver: transient GPU pressure, through mesh changes
+
+- Ship `bin/amgx/libamgxSolvers.dll`, coupledSimpleFoam's AmgX scalar solver as a library any solver can load (#3): `libs ("libamgxSolvers.so");` in `controlDict` and `solver AmgX;` for an equation in `fvSolution`, for example `p`, `pFinal` and `pcorr` in a transient `foamRun -solver incompressibleFluid` run. `of14-shell.ps1` puts `bin/amgx` and the CUDA Toolkit's `bin` at the end of PATH when both are present, so the library loads; `coupledSimpleFoam` remains the CPU build.
+  - It follows topology changes: with the `refiner` (adaptive mesh refinement) the field's matrix pattern and GPU handles are rebuilt after each change. A 3D lid-driven cavity refined and unrefined five times solved `p` and `pcorr` on AmgX throughout.
+  - Each field's AmgX solver is kept between time steps (refreshed on the new coefficients, rebuilt every `amgxSetupInterval` solves, default 10).
+  - It pays off on large meshes only: every GPU solve has a fixed latency. On the 5,388-cell Re 100 cylinder tutorial AmgX pressure gives the same drag as PCG but runs about 9x slower than PCG on one core.
+  - Serial runs only, and no cyclic or processor interfaces.
+- coupledSimpleFoam prints a `cyclic flux check` after a run: for each cyclic pair, the net flux and the largest mismatch between the two sides' face fluxes (coupledSimpleFoam#1).
+- All three coupledSimpleFoam builds come from coupledSimpleFoam `main` at `02b43fd`.
+
 # v14.0.0-win.8 — GPU over Remote Desktop, conjugate heat transfer on the CPU
 
 - The CPU coupled solver's `linearSolver BiCGSTAB` (Eigen) is about 10x faster on large cases: its preconditioner is kept between outer iterations (`pcReuseInterval`), it follows `adaptiveTolerance`, its matrix-vector products use all OpenMP threads, and the IncompleteLUT defaults are lighter (`fillFactor 5`, `dropTolerance 1e-4`). An 80k-cell conjugate case went from about 15 min to 82 s with the same answer.

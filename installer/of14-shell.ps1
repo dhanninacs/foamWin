@@ -81,6 +81,17 @@ if ($mpiRuntime -and $mpiBackend) {
     $env:FOAM_MPIEXEC = ''
     $env:PATH = "$platform/bin;$platform/lib;$platform/lib/dummy;$env:PATH"
 }
+# The GPU solver library (bin/amgx/libamgxSolvers.dll, `solver AmgX;` for any solver's
+# equations, loaded with libs ("libamgxSolvers.so")) needs bin/amgx and the CUDA Toolkit's bin on
+# PATH. Both go last, after the CPU tools, so bin/coupledSimpleFoam.exe stays the one run as
+# coupledSimpleFoam; only with an NVIDIA CUDA Toolkit present.
+$cudaForGpu = $null
+foreach ($candidate in @("$env:CUDA_PATH/bin", $env:CUDA_PATH)) {
+    if ($env:CUDA_PATH -and (Test-Path -LiteralPath (Join-Path $candidate 'cublas64_12.dll'))) { $cudaForGpu = $candidate; break }
+}
+if ($cudaForGpu -and (Test-Path -LiteralPath "$platform/bin/amgx/libamgxSolvers.dll")) {
+    $env:PATH = "$env:PATH;$platform/bin/amgx;$cudaForGpu"
+}
 # Standalone mesher; keep its runtime separate from OpenFOAM DLLs.
 $gmshDirectory = Join-Path $PSScriptRoot 'gmsh'
 if (Test-Path -LiteralPath (Join-Path $gmshDirectory 'gmsh.exe')) {

@@ -27,7 +27,7 @@ set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 SOURCE=${OF14_SOURCE:-$REPO/OpenFOAM-14}
 JOBS=${FOAM_BUILD_JOBS:-2}
-COUPLED_COMMIT=a224afadf675f5a67d209d75198f70d41591dd1a
+COUPLED_COMMIT=02b43fdd1c089121ebaf89414b229bce91e49e0d
 EIGEN_INCLUDE=${EIGEN_INCLUDE:-/usr/include/eigen3}
 : "${COUPLED_SOURCE:?Set COUPLED_SOURCE to a coupledSimpleFoam clone}"
 : "${COUPLED_BUILD_ROOT:?Set COUPLED_BUILD_ROOT to a new directory}"
@@ -97,6 +97,15 @@ if [ -n "${AMGX_WINDOWS_BUILD:-}" ]; then
         cd "$GPU_ROOT/src/src/coupledSimpleFoam" && wmake -j "$JOBS"
     )
     test -f "$FOAM_APPBIN/amgx/coupledSimpleFoam.exe"
+    # The AmgX lduMatrix solver as a library for any solver (foamRun's
+    # transient pressure solve: libs ("libamgxSolvers.so"); p { solver AmgX; }),
+    # installed beside amgxsh.dll in bin/amgx.
+    (
+        export FOAM_USER_LIBBIN=$FOAM_APPBIN/amgx
+        export AMGX_DIR="$GPU_ROOT/prefix" AMGX_RPATH=
+        cd "$GPU_ROOT/src/src/amgxSolvers" && wmake -j "$JOBS" libso
+    )
+    test -f "$FOAM_APPBIN/amgx/libamgxSolvers.dll"
     cp "$AMGX_WINDOWS_BUILD/amgxsh.dll" "$FOAM_APPBIN/amgx/"
     # Visual Studio installs these read-only: make them writable, so a rebuild can replace them.
     for f in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do

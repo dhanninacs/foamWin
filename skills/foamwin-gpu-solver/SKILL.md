@@ -103,6 +103,24 @@ N matched faces` and an energy check each iteration. Limits: one fluid region; s
 radiation, volumetric sources and temperature-dependent properties are not supported (use
 `foamMultiRun` for those). A solid's outer faces can carry `fixedValue` temperatures.
 
+## Transient runs and other solvers (win.9+)
+
+`bin/amgx/libamgxSolvers.dll` makes `solver AmgX;` available to any solver, for example the
+pressure of a transient `foamRun -solver incompressibleFluid` run:
+
+```c++
+libs ("libamgxSolvers.so");                         // system/controlDict
+p      { solver AmgX; tolerance 1e-6; relTol 0.05; }    // system/fvSolution
+pFinal { $p; relTol 0; }
+pcorr  { solver AmgX; tolerance 1e-2; relTol 0; }      // needed with a refiner
+```
+
+Load the FoamWin shell with the CUDA Toolkit installed (it puts `bin/amgx` on PATH). It follows
+the `refiner` (adaptive mesh refinement). Serial only, no cyclic or processor interfaces. **Only
+for large meshes**: every GPU solve has a fixed latency, so on tens of thousands of cells PCG or
+GAMG on the CPU is faster (a 5k-cell cylinder ran 9x slower on AmgX). A transient coupled
+(PIMPLE) GPU solver does not exist yet.
+
 ## Troubleshooting
 
 | Symptom | Fix |
