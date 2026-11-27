@@ -52,7 +52,7 @@ Run in the case folder: `coupledSimpleFoam *> log.coupled`. There is no `-solver
 | `linearSolver` | Use for |
 | --- | --- |
 | `SparseLU` (Eigen, direct) | 2D, or 3D up to ~80k cells; robust, no tuning |
-| `BiCGSTAB` (Eigen + ILUT) | mid-size serial |
+| `BiCGSTAB` (Eigen + ILUT) | serial, any size on win.8+: add `adaptiveTolerance yes; pcReuseInterval 8;` (keeps the preconditioner, loose early solves) |
 | `PETSc` | 3D beyond that, and every parallel run (field-split Schur + hypre BoomerAMG by default) |
 
 For large 3D cases in parallel the measured fast settings are:

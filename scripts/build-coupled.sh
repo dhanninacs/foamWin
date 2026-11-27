@@ -27,7 +27,7 @@ set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 SOURCE=${OF14_SOURCE:-$REPO/OpenFOAM-14}
 JOBS=${FOAM_BUILD_JOBS:-2}
-COUPLED_COMMIT=9326f030e32ae4c1bbfb3b2202c64e16d549a0b6
+COUPLED_COMMIT=a224afadf675f5a67d209d75198f70d41591dd1a
 EIGEN_INCLUDE=${EIGEN_INCLUDE:-/usr/include/eigen3}
 : "${COUPLED_SOURCE:?Set COUPLED_SOURCE to a coupledSimpleFoam clone}"
 : "${COUPLED_BUILD_ROOT:?Set COUPLED_BUILD_ROOT to a new directory}"
