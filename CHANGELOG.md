@@ -1,3 +1,12 @@
+# v14.0.0-win.10 — robust AmgX smoother, CUDA from pip, GPU in of14-env
+
+- The AmgX solves use a multicolour Gauss-Seidel smoother by default (`amgxSmoother GS`; `DILU` restores the earlier one) for the coupled system, `solver AmgX;` and the conjugate temperature (#4). It converged a stretched (aspect ratio ~10) micro-channel conjugate case on which the earlier smoother diverged; on the isotropic benchmarks it costs 5-10 % with the same iteration counts and answers.
+- A linear solve that returns NaN now stops the run at once with what to try, instead of failing later with `AmgX solver_resetup failed: Internal error` (#4). `amgxConfig` (a whole AmgX configuration) is documented in the GPU skill and coupledSimpleFoam's `doc/GPU-AMGX.md`.
+- `amgxPrecision mixed` is refused with a message: AmgX 2.5's mixed mode failed inside AmgX on every case tried (#3).
+- The CUDA 12 runtime can come from several folders: `FOAMWIN_CUDA_BIN` (`;`-separated, used before `CUDA_PATH`) takes, for example, the bin folders of the `nvidia-*-cu12` pip wheels, which need no administrator (#5). `Get-FoamWinCudaBin` returns every such folder once cuBLAS, cuSPARSE and cuSOLVER are all found.
+- `of14-env.ps1 -Gpu` returns the PATH with `bin/amgx` and the CUDA folders, and every call reports a `gpu` block (`available`, `executable`, `library`, `cudaBin`) (#5).
+- All three coupledSimpleFoam builds come from coupledSimpleFoam `main` at `1a759b4`.
+
 # v14.0.0-win.9 — AmgX for any solver: transient GPU pressure, through mesh changes
 
 - Ship `bin/amgx/libamgxSolvers.dll`, coupledSimpleFoam's AmgX scalar solver as a library any solver can load (#3): `libs ("libamgxSolvers.so");` in `controlDict` and `solver AmgX;` for an equation in `fvSolution`, for example `p`, `pFinal` and `pcorr` in a transient `foamRun -solver incompressibleFluid` run. `of14-shell.ps1` puts `bin/amgx` and the CUDA Toolkit's `bin` at the end of PATH when both are present, so the library loads; `coupledSimpleFoam` remains the CPU build.

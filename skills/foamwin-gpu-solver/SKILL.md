@@ -22,8 +22,12 @@ solver on 10 MPI ranks, 20-25x `foamRun`, 14-15x `foamMultiRun` for CHT, with th
 
 - NVIDIA GPU, compute capability 7.5, 8.x, 8.9 or 12.0 (Turing, Ampere, Ada, Blackwell
   workstation). `nvidia-smi` must work.
-- **CUDA Toolkit 12** installed (cuBLAS, cuSPARSE, cuSOLVER are loaded from it, not shipped);
-  `CUDA_PATH` set by its installer. Check in the shell: `Get-FoamWinCudaBin` returns its `bin`.
+- **The CUDA 12 runtime** (cuBLAS, cuSPARSE, cuSOLVER, nvJitLink; not shipped): either the CUDA
+  Toolkit 12 (`CUDA_PATH`), or, without administrator rights, the pip wheels
+  `python -m pip install --no-deps --target D:\cuda12 nvidia-cublas-cu12 nvidia-cusparse-cu12
+  nvidia-cusolver-cu12 nvidia-nvjitlink-cu12 nvidia-cuda-runtime-cu12` (about 1.7 GB) with
+  `FOAMWIN_CUDA_BIN` set to their `nvidia\<name>\bin` folders, separated by `;` (win.10+).
+  Check in the shell: `Get-FoamWinCudaBin` returns the folders, or nothing.
 - One process, one GPU: no `-parallel`. The mesh must fit in GPU memory (2.1M cells used < 8 GB).
 - Steady, incompressible, temperature passive (no buoyancy), as for the CPU coupled solver.
 
@@ -52,7 +56,7 @@ COUPLED
     nOuterIterations  100;
     linearSolver      AmgX;
     amgxReuse         resetup;   // default; "none" does NOT converge
-    amgxPrecision     double;    // "mixed" = single-precision AMG, faster on consumer cards
+    amgxSmoother      GS;        // default; DILU = the pre-win.10 smoother
     pseudoTransient   yes;   pseudoCo 50;
     adaptiveTolerance yes;   relTolMax 1e-2; relTolMin 1e-8;
     pcReuseInterval   8;         // rebuild the AMG hierarchy every 8 outer iterations
@@ -121,11 +125,22 @@ for large meshes**: every GPU solve has a fixed latency, so on tens of thousands
 GAMG on the CPU is faster (a 5k-cell cylinder ran 9x slower on AmgX). A transient coupled
 (PIMPLE) GPU solver does not exist yet.
 
+## Robustness and configuration (win.10+)
+
+- `amgxSmoother GS` (default) or `DILU` picks the AMG smoother; GS is the robust one on stretched,
+  high-aspect-ratio cells (FoamWin #4). `amgxConfig "..."` replaces the whole AmgX configuration.
+- A diverged linear solve stops the run with a message naming `amgxSmoother GS` / `pseudoCo`.
+- `amgxPrecision mixed` is refused (AmgX 2.5's mixed mode fails).
+- A program driving FoamWin: `of14-env.ps1 -Gpu` returns the PATH with `bin/amgx` and the CUDA
+  folders, and a `gpu` block (`available`, `executable`, `library`, `cudaBin`).
+
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | `The GPU solver needs the NVIDIA CUDA Toolkit 12` | Install CUDA 12, reopen the shell; check `CUDA_PATH`. |
+| Every coupled linear solve hits `maxLinearIter`, then NaN or `solver_resetup failed: Internal error` | Stretched cells with the DILU smoother: use `amgxSmoother GS` (the default from win.10), or a smaller `pseudoCo`. |
+| `The GPU solver needs the CUDA 12 runtime` with the DLLs from pip | Set `FOAMWIN_CUDA_BIN` to every `nvidia\<name>\bin` folder, `;`-separated, and reopen the shell. |
 | Exit `0xC0000135` | Started without the CUDA `bin` / `bin\amgx` on PATH: use `coupledSimpleFoamAmgX`. |
 | Segfault in `nvcuda64.dll` / `nvdxgdmal64.dll` under `cuInit` at start-up, on Windows Server over Remote Desktop | The executable lacks the Terminal-Server-aware PE flag (win.7). Fixed in win.8: every FoamWin executable carries it. For an older build, `python scripts/set-tsaware.py <folder>` marks a copy (FoamWin #1). |
 | `AMGX ERROR` about the device / no kernel image | GPU architecture not in 7.5/8.x/8.9/12.0, or driver too old. |

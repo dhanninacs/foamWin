@@ -24,6 +24,11 @@ cross toolchain. Running the result does not require Linux, MSYS2, WSL or Bash.
 
 ## Current release
 
+v14.0.0-win.10 — 28 November 2026. Gauss-Seidel is the default AmgX smoother (robust on
+stretched cells), a diverged solve stops with a clear message, the CUDA 12 runtime can
+come from pip wheels in several folders (FOAMWIN_CUDA_BIN), and of14-env.ps1 -Gpu reports
+the GPU build.
+
 v14.0.0-win.9 — 27 November 2026. Ships libamgxSolvers.dll: `solver AmgX;` for any
 solver's equations (`libs ("libamgxSolvers.so");`), e.g. the pressure of a transient
 `foamRun` run, through adaptive mesh refinement too. Worth it on large meshes only.

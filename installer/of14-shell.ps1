@@ -81,39 +81,50 @@ if ($mpiRuntime -and $mpiBackend) {
     $env:FOAM_MPIEXEC = ''
     $env:PATH = "$platform/bin;$platform/lib;$platform/lib/dummy;$env:PATH"
 }
-# The GPU solver library (bin/amgx/libamgxSolvers.dll, `solver AmgX;` for any solver's
-# equations, loaded with libs ("libamgxSolvers.so")) needs bin/amgx and the CUDA Toolkit's bin on
-# PATH. Both go last, after the CPU tools, so bin/coupledSimpleFoam.exe stays the one run as
-# coupledSimpleFoam; only with an NVIDIA CUDA Toolkit present.
-$cudaForGpu = $null
-foreach ($candidate in @("$env:CUDA_PATH/bin", $env:CUDA_PATH)) {
-    if ($env:CUDA_PATH -and (Test-Path -LiteralPath (Join-Path $candidate 'cublas64_12.dll'))) { $cudaForGpu = $candidate; break }
+# NVIDIA GPU parts (bin/amgx): coupledSimpleFoam's AmgX build and libamgxSolvers.dll. AmgX loads the
+# CUDA 12 runtime: cuBLAS, cuSPARSE, cuSOLVER (and nvJitLink, cudart). Get-FoamWinCudaBin finds them in
+# FOAMWIN_CUDA_BIN (one or more folders separated by ';', e.g. the bin folders of the nvidia-*-cu12 pip
+# wheels, which need no administrator), then CUDA_PATH (the toolkit's folder or its bin). It returns
+# every folder that holds CUDA DLLs, joined by ';', once cuBLAS, cuSPARSE and cuSOLVER have all been
+# found; otherwise nothing.
+function global:Get-FoamWinCudaBin {
+    $required = @('cublas64_12.dll', 'cusparse64_12.dll', 'cusolver64_11.dll')
+    $candidates = @()
+    if ($env:FOAMWIN_CUDA_BIN) { $candidates += @($env:FOAMWIN_CUDA_BIN -split ';' | Where-Object { $_.Trim() }) }
+    if ($env:CUDA_PATH) { $candidates += @("$env:CUDA_PATH/bin", $env:CUDA_PATH) }
+    $folders = @()
+    $found = @{}
+    foreach ($candidate in $candidates) {
+        $candidate = $candidate.Trim()
+        if (-not (Test-Path -LiteralPath $candidate -PathType Container)) { continue }
+        $dlls = @(Get-ChildItem -LiteralPath $candidate -Filter '*.dll' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^(cublas|cublasLt|cusparse|cusolver|nvJitLink|cudart)64_' -or $_.Name -match '^nvJitLink_' })
+        if (-not $dlls.Count) { continue }
+        $full = (Resolve-Path -LiteralPath $candidate).Path
+        if ($folders -notcontains $full) { $folders += $full }
+        foreach ($dll in $dlls) { $found[$dll.Name.ToLowerInvariant()] = $true }
+    }
+    foreach ($name in $required) { if (-not $found[$name]) { return $null } }
+    return ($folders -join ';')
 }
-if ($cudaForGpu -and (Test-Path -LiteralPath "$platform/bin/amgx/libamgxSolvers.dll")) {
-    $env:PATH = "$env:PATH;$platform/bin/amgx;$cudaForGpu"
+# bin/amgx and the CUDA folders go last on PATH, after the CPU tools, so bin/coupledSimpleFoam.exe stays
+# the one run as coupledSimpleFoam while `libs ("libamgxSolvers.so")` and the AmgX build can load.
+$foamWinCudaBin = Get-FoamWinCudaBin
+if ($foamWinCudaBin -and (Test-Path -LiteralPath "$platform/bin/amgx")) {
+    $env:PATH = "$env:PATH;$platform/bin/amgx;$foamWinCudaBin"
 }
 # Standalone mesher; keep its runtime separate from OpenFOAM DLLs.
 $gmshDirectory = Join-Path $PSScriptRoot 'gmsh'
 if (Test-Path -LiteralPath (Join-Path $gmshDirectory 'gmsh.exe')) {
     $env:PATH = "$gmshDirectory;$env:PATH"
 }
-# coupledSimpleFoam's NVIDIA GPU build (AmgX) is bin/amgx/coupledSimpleFoam.exe. It is not put on
-# PATH, where it would shadow the CPU build: run it as coupledSimpleFoamAmgX. AmgX needs cuBLAS,
-# cuSPARSE and cuSOLVER from the CUDA Toolkit 12, found through CUDA_PATH (the toolkit's folder or
-# its bin, whichever holds cublas64_12.dll).
-function global:Get-FoamWinCudaBin {
-    foreach ($candidate in @("$env:CUDA_PATH/bin", $env:CUDA_PATH)) {
-        if ($env:CUDA_PATH -and (Test-Path -LiteralPath (Join-Path $candidate 'cublas64_12.dll'))) {
-            return (Resolve-Path -LiteralPath $candidate).Path
-        }
-    }
-    return $null
-}
+# coupledSimpleFoam's NVIDIA GPU build (AmgX) is bin/amgx/coupledSimpleFoam.exe. It is not put first on
+# PATH, where it would shadow the CPU build: run it as coupledSimpleFoamAmgX.
 function global:coupledSimpleFoamAmgX {
     $gpuBin = "$env:FOAM_APPBIN/amgx"
     if (-not (Test-Path -LiteralPath "$gpuBin/coupledSimpleFoam.exe")) { throw 'This FoamWin has no GPU build (bin/amgx).' }
     $cudaBin = Get-FoamWinCudaBin
-    if (-not $cudaBin) { throw 'The GPU solver needs the NVIDIA CUDA Toolkit 12 (cuBLAS, cuSPARSE, cuSOLVER); install it and reopen the shell.' }
+    if (-not $cudaBin) { throw 'The GPU solver needs the CUDA 12 runtime (cuBLAS, cuSPARSE, cuSOLVER): install the NVIDIA CUDA Toolkit 12, or set FOAMWIN_CUDA_BIN to the folder(s) holding those DLLs (for example the bin folders of the nvidia-cublas-cu12, nvidia-cusparse-cu12, nvidia-cusolver-cu12, nvidia-nvjitlink-cu12 pip wheels), and reopen the shell.' }
     $saved = $env:PATH
     try {
         $env:PATH = "$gpuBin;$cudaBin;$saved"

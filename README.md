@@ -14,7 +14,7 @@ validation details, limitations and the application attachment guide.
 
 ## Download and install
 
-The latest release is **v14.0.0-win.9**: NVIDIA AmgX for any solver's equations (`libs ("libamgxSolvers.so"); solver AmgX;`), so transient `foamRun` runs can solve their pressure on the GPU, through adaptive mesh refinement too. v14.0.0-win.8 made:
+The latest release is **v14.0.0-win.10**: a robust default AmgX smoother (Gauss-Seidel), the CUDA 12 runtime from pip wheels without administrator rights (`FOAMWIN_CUDA_BIN`), and `of14-env.ps1 -Gpu`. v14.0.0-win.9 added NVIDIA AmgX for any solver's equations (`libs ("libamgxSolvers.so"); solver AmgX;`), so transient `foamRun` runs can solve their pressure on the GPU, through adaptive mesh refinement too. v14.0.0-win.8 made:
   - the GPU solver run on Windows Server over Remote Desktop, as every executable is now Terminal-Server aware;
   - conjugate heat transfer run on the CPU builds too, including periodic (cyclic) cells;
   - the CPU coupled solver's BiCGSTAB backend about 10× faster.
@@ -253,7 +253,11 @@ It needs an NVIDIA GPU of compute capability 7.5, 8.x, 8.9 or 12.0 (Turing,
 Ampere, Ada and Blackwell workstation cards), a current NVIDIA driver, and the
 [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads), whose cuBLAS,
 cuSPARSE and cuSOLVER it loads. Those are not shipped: the shell finds them through
-`CUDA_PATH`. One process drives one GPU. The case settings are in coupledSimpleFoam's
+`CUDA_PATH`, or from the folders in `FOAMWIN_CUDA_BIN` (`;`-separated): without administrator
+rights, install the runtime as pip wheels (`python -m pip install --no-deps --target D:\cuda12
+nvidia-cublas-cu12 nvidia-cusparse-cu12 nvidia-cusolver-cu12 nvidia-nvjitlink-cu12
+nvidia-cuda-runtime-cu12`, about 1.7 GB) and list their `nvidia\<name>\bin` folders there. One
+process drives one GPU. `amgxSmoother GS|DILU` and `amgxConfig` tune the AmgX solver. The case settings are in coupledSimpleFoam's
 `doc/GPU-AMGX.md`.
 
 Measured on an RTX 4000 Ada (20 GB) and an i9-13900, natively on Windows, public

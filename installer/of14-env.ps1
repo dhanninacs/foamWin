@@ -1,4 +1,4 @@
-param([string]$CaseDirectory, [switch]$Parallel)
+param([string]$CaseDirectory, [switch]$Parallel, [switch]$Gpu)
 # JSON handshake for applications. Only explicit runtime variables are returned.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
@@ -26,6 +26,22 @@ foreach ($name in @('gmsh','gmshToFoam','polyDualMesh')) {
     $command = Get-Command "$name.exe" -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     $tools[$name] = if ($command) { $command.Source } else { $null }
 }
+# The NVIDIA GPU parts. With -Gpu, PATH carries bin/amgx and the CUDA folders even when the shell did not
+# add them (no libamgxSolvers.dll), so a host program can run the GPU build like the CPU tools.
+$gpuBin = Join-Path $env:FOAM_APPBIN 'amgx'
+$gpuExe = Join-Path $gpuBin 'coupledSimpleFoam.exe'
+$gpuLib = Join-Path $gpuBin 'libamgxSolvers.dll'
+$cudaBin = Get-FoamWinCudaBin
+$gpuInfo = [ordered]@{
+    available = [bool]((Test-Path -LiteralPath $gpuExe -PathType Leaf) -and $cudaBin)
+    executable = $(if (Test-Path -LiteralPath $gpuExe -PathType Leaf) { $gpuExe } else { $null })
+    library = $(if (Test-Path -LiteralPath $gpuLib -PathType Leaf) { $gpuLib } else { $null })
+    cudaBin = @($(if ($cudaBin) { $cudaBin -split ';' } else { @() }))
+}
+if ($Gpu -and $gpuInfo.available -and ($env:PATH -notlike "*$($gpuBin.Replace('\','/'))*") -and ($env:PATH -notlike "*$gpuBin*")) {
+    $env:PATH = "$env:PATH;$gpuBin;$cudaBin"
+    $environment['PATH'] = $env:PATH
+}
 $modules = @(Get-ChildItem -LiteralPath $env:FOAM_LIBBIN -Filter '*.dll' | ForEach-Object { $_.BaseName -replace '^lib','' })
 $casePath = $null
 if ($CaseDirectory) { $casePath = ConvertTo-OpenFOAMPath $CaseDirectory }
@@ -37,6 +53,7 @@ if ($CaseDirectory) { $casePath = ConvertTo-OpenFOAMPath $CaseDirectory }
     tools = $tools
     missingRequiredTools = @($missing)
     libraries = @($modules | Sort-Object)
+    gpu = $gpuInfo
     parallel = @{ available = ($env:FOAM_MPI -eq 'msmpi'); backend = $env:FOAM_MPI; executable = $env:FOAM_MPIEXEC; countFlag = '-n' }
     caseDirectory = $casePath
     workingDirectory = $env:WM_PROJECT_DIR
